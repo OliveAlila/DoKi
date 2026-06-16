@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import { createContext, useContext, useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
+import { createContext, useContext } from 'react';
 
 type User = {
   id: number;
