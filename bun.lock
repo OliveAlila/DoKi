@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "mazingira",
+      "name": "doki",
       "devDependencies": {
         "@types/bun": "latest",
       },
