@@ -6,6 +6,7 @@
     "clsx": "^2.1.1",
     "expo": "~56.0.12",
     "expo-camera": "^56.0.8",
+    "expo-constants": "^56.0.18",
     "expo-status-bar": "~56.0.4",
     "nativewind": "^4.2.5",
     "react": "19.2.3",

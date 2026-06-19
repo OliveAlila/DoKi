@@ -1,6 +1,6 @@
-import { PrismaClient } from '@prisma/client';
+import path from 'node:path';
+import { PrismaClient, Role } from '@prisma/client';
 import { PrismaBunSqlite } from 'prisma-adapter-bun-sqlite';
-import path from 'path';
 import { hashPassword } from '../src/utils/hash';
 
 // Seed script is run from apps/api directory usually
@@ -15,20 +15,20 @@ async function main() {
   await prisma.auditLog.deleteMany();
   await prisma.transaction.deleteMany();
   await prisma.listing.deleteMany();
-  await prisma.buyer.deleteMany();
-  await prisma.seller.deleteMany();
   await prisma.category.deleteMany();
   await prisma.user.deleteMany();
 
   console.log('Cleared database tables.');
 
+  const defaultPassword = hashPassword('password123');
+
   // 2. Seed Admin User
-  const adminPassword = hashPassword('password123');
   const admin = await prisma.user.create({
     data: {
       email: 'admin@doki.com',
       name: 'Doki Admin Operator',
-      password: adminPassword,
+      password: defaultPassword,
+      role: Role.ADMIN,
     },
   });
   console.log('Seeded admin user.');
@@ -50,45 +50,64 @@ async function main() {
     data: { name: 'Animal Manure', doc: 0.13 },
   });
 
-  const categories = [spentGrain, coffeePulp, fruitWaste, maizeHusks, animalManure];
   console.log('Seeded categories.');
 
   // 4. Seed Real-World Geolocation Profiles in Kenya
   // 5 Sellers
-  const sellerA = await prisma.seller.create({
+  const sellerA = await prisma.user.create({
     data: {
+      email: 'seller.thika@doki.com',
+      password: defaultPassword,
+      role: Role.SELLER,
+      companyName: 'Thika Coffee Millers',
       name: 'Thika Coffee Millers',
       latitude: -1.0333,
       longitude: 37.0667,
       address: 'Garissa Road, Thika',
     },
   });
-  const sellerB = await prisma.seller.create({
+  const sellerB = await prisma.user.create({
     data: {
+      email: 'seller.kiambu@doki.com',
+      password: defaultPassword,
+      role: Role.SELLER,
+      companyName: 'Kiambu Fruit Canning Ltd',
       name: 'Kiambu Fruit Canning Ltd',
       latitude: -1.1667,
       longitude: 36.8333,
       address: 'Kiambu Town Road',
     },
   });
-  const sellerC = await prisma.seller.create({
+  const sellerC = await prisma.user.create({
     data: {
+      email: 'seller.nairobi@doki.com',
+      password: defaultPassword,
+      role: Role.SELLER,
+      companyName: 'Nairobi Brewery Outlet',
       name: 'Nairobi Brewery Outlet',
       latitude: -1.2921,
       longitude: 36.8219,
       address: 'Industrial Area, Nairobi',
     },
   });
-  const sellerD = await prisma.seller.create({
+  const sellerD = await prisma.user.create({
     data: {
+      email: 'seller.nakuru@doki.com',
+      password: defaultPassword,
+      role: Role.SELLER,
+      companyName: 'Nakuru Grain Processing Hub',
       name: 'Nakuru Grain Processing Hub',
       latitude: -0.3031,
       longitude: 36.0800,
       address: 'George Morara Road, Nakuru',
     },
   });
-  const sellerE = await prisma.seller.create({
+  const sellerE = await prisma.user.create({
     data: {
+      email: 'seller.eldoret@doki.com',
+      password: defaultPassword,
+      role: Role.SELLER,
+      companyName: 'Eldoret Dairy Cooperatives',
       name: 'Eldoret Dairy Cooperatives',
       latitude: 0.5143,
       longitude: 35.2697,
@@ -96,28 +115,39 @@ async function main() {
     },
   });
 
-  const sellers = [sellerA, sellerB, sellerC, sellerD, sellerE];
   console.log('Seeded Sellers.');
 
   // 3 Buyers
-  const buyerA = await prisma.buyer.create({
+  const buyerA = await prisma.user.create({
     data: {
+      email: 'buyer.chania@doki.com',
+      password: defaultPassword,
+      role: Role.BUYER,
+      companyName: 'Chania Biogas Energy Plant',
       name: 'Chania Biogas Energy Plant',
       latitude: -1.0125,
       longitude: 37.0910,
       address: 'Del Monte Area, Thika',
     },
   });
-  const buyerB = await prisma.buyer.create({
+  const buyerB = await prisma.user.create({
     data: {
+      email: 'buyer.kiambu@doki.com',
+      password: defaultPassword,
+      role: Role.BUYER,
+      companyName: 'Kiambu Organic Feed & Insect Protein Farm',
       name: 'Kiambu Organic Feed & Insect Protein Farm',
       latitude: -1.1550,
       longitude: 36.8500,
       address: 'Kirigiti, Kiambu',
     },
   });
-  const buyerC = await prisma.buyer.create({
+  const buyerC = await prisma.user.create({
     data: {
+      email: 'buyer.nairobi@doki.com',
+      password: defaultPassword,
+      role: Role.BUYER,
+      companyName: 'Nairobi Bio-Fuel Co',
       name: 'Nairobi Bio-Fuel Co',
       latitude: -1.3120,
       longitude: 36.8850,
@@ -125,7 +155,6 @@ async function main() {
     },
   });
 
-  const buyers = [buyerA, buyerB, buyerC];
   console.log('Seeded Buyers.');
 
   // 5. Create some pending listings to display on the map
@@ -185,8 +214,6 @@ async function main() {
   // We want to calculate carbon avoidance values based on:
   // Methane Avoided = (qtyKg / 1000) * doc * 0.333
   // CO2e reduced = Methane Avoided * 28
-  const today = new Date();
-  
   const transactionsData = [
     // Jan 2026
     { seller: sellerA, buyer: buyerA, category: coffeePulp, quantity: 4500, date: new Date(2026, 0, 15) },

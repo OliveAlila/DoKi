@@ -1,91 +1,111 @@
+import { GoogleGenAI } from '@google/genai';
 import { Router } from 'express';
 import prisma from '@/db';
+import type { AuthRequest } from '@/middleware/auth';
+import { authenticateJWT } from '@/middleware/auth';
 
 const router = Router();
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || 'dummy-key' });
 
 // 1. Camera Classification Flow (POST /api/v1/listings/classify)
-router.post('/listings/classify', async (req, res) => {
+router.post('/listings/classify', authenticateJWT, async (req: AuthRequest, res) => {
   const { image } = req.body;
   if (!image) {
     return res.status(400).json({ error: 'Image payload is required' });
   }
 
   try {
-    // Simulate processing delay for AI pipeline
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // Fetch categories from DB to choose one dynamically
     const categories = await prisma.category.findMany();
     if (categories.length === 0) {
       return res.status(500).json({ error: 'No categories found in database. Please run seed script.' });
     }
 
-    // Pick a random category
-    const randomIndex = Math.floor(Math.random() * categories.length);
-    const category = categories[randomIndex];
-
-    // Generate realistic confidence
-    const confidence = parseFloat((0.85 + Math.random() * 0.14).toFixed(4)); // 0.85 to 0.99
-
-    // Generate realistic parameters based on Category Name
-    let moisture = 45.0;
-    let purity = 98.5;
-    let flaggedContaminants: string[] = [];
-
-    switch (category.name) {
-      case 'Spent Grain':
-        moisture = parseFloat((60 + Math.random() * 15).toFixed(1)); // 60-75%
-        purity = parseFloat((95 + Math.random() * 5).toFixed(1));
-        break;
-      case 'Coffee Pulp':
-        moisture = parseFloat((40 + Math.random() * 12).toFixed(1)); // 40-52%
-        purity = parseFloat((96 + Math.random() * 4).toFixed(1));
-        break;
-      case 'Fruit & Vegetable Waste':
-        moisture = parseFloat((75 + Math.random() * 15).toFixed(1)); // 75-90%
-        purity = parseFloat((90 + Math.random() * 8).toFixed(1));
-        if (Math.random() < 0.25) {
-          flaggedContaminants.push('Plastic packaging wraps');
+    const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+    
+    // Call Gemini 2.5 Flash API
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-preview-09-2025',
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            { inlineData: { data: base64Data, mimeType: 'image/jpeg' } },
+            { text: `Analyze this image of agricultural waste. Determine the category among: [${categories.map(c => c.name).join(', ')}]. Provide an estimated confidence score between 0 and 1, estimated moisture percentage (e.g., 45.0), estimated purity percentage (e.g., 98.5), and an array of any flagged contaminants. Respond strictly with JSON: { "categoryName": "string", "confidence": number, "moisture": number, "purity": number, "flaggedContaminants": ["string"] }.` }
+          ]
         }
-        break;
-      case 'Maize Husks':
-        moisture = parseFloat((10 + Math.random() * 6).toFixed(1)); // 10-16%
-        purity = parseFloat((98 + Math.random() * 2).toFixed(1));
-        break;
-      case 'Animal Manure':
-        moisture = parseFloat((65 + Math.random() * 12).toFixed(1)); // 65-77%
-        purity = parseFloat((92 + Math.random() * 6).toFixed(1));
-        if (Math.random() < 0.2) {
-          flaggedContaminants.push('Excessive sand / stones');
-        }
-        break;
+      ],
+      config: {
+        responseMimeType: 'application/json',
+      }
+    });
+
+    let resultJson: any;
+    try {
+      const rawText = response.text || '';
+      const cleanText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+      resultJson = JSON.parse(cleanText || '{}');
+    } catch (parseError) {
+      console.warn('JSON parsing of Gemini response failed, applying robust fallback/regex:', parseError);
+      const rawText = response.text || '';
+      
+      const categoryRegex = /"categoryName"\s*:\s*"([^"]+)"/i;
+      const confidenceRegex = /"confidence"\s*:\s*([0-9.]+)/;
+      const moistureRegex = /"moisture"\s*:\s*([0-9.]+)/;
+      const purityRegex = /"purity"\s*:\s*([0-9.]+)/;
+      
+      const catMatch = rawText.match(categoryRegex);
+      const confMatch = rawText.match(confidenceRegex);
+      const moistMatch = rawText.match(moistureRegex);
+      const purityMatch = rawText.match(purityRegex);
+
+      resultJson = {
+        categoryName: (catMatch && catMatch[1]) ? catMatch[1] : (categories[0]?.name || 'Coffee Pulp'),
+        confidence: (confMatch && confMatch[1]) ? parseFloat(confMatch[1]) : 0.85,
+        moisture: (moistMatch && moistMatch[1]) ? parseFloat(moistMatch[1]) : 45.0,
+        purity: (purityMatch && purityMatch[1]) ? parseFloat(purityMatch[1]) : 95.0,
+        flaggedContaminants: [],
+      };
     }
 
-    // Return the classification result
+    let matchedCategory = categories.find(c => c.name.toLowerCase() === resultJson.categoryName?.toLowerCase());
+    if (!matchedCategory) {
+      matchedCategory = categories[0];
+    }
+    if (!matchedCategory) {
+      return res.status(500).json({ error: 'No categories available' });
+    }
+
     res.json({
-      categoryId: category.id,
-      categoryName: category.name,
-      confidence,
-      moisture,
-      purity,
-      flaggedContaminants,
+      categoryId: matchedCategory.id,
+      categoryName: matchedCategory.name,
+      confidence: resultJson.confidence ?? 0.85,
+      moisture: resultJson.moisture ?? 40.0,
+      purity: resultJson.purity ?? 95.0,
+      flaggedContaminants: resultJson.flaggedContaminants || [],
     });
   } catch (error) {
+    console.error('Classification error:', error);
     res.status(500).json({ error: 'Failed to classify image' });
   }
 });
 
 // 2. Publish a listing (POST /api/v1/listings)
-router.post('/listings', async (req, res) => {
-  const { sellerId, categoryId, quantity, moisture, purity } = req.body;
+router.post('/listings', authenticateJWT, async (req: AuthRequest, res) => {
+  const { categoryId, quantity, moisture, purity } = req.body;
+  const sellerId = req.user?.userId;
+  const role = req.user?.role;
+
+  if (role !== 'SELLER') {
+    return res.status(403).json({ error: 'Only sellers can publish listings' });
+  }
 
   if (!sellerId || !categoryId || !quantity) {
     return res.status(400).json({ error: 'Missing required parameters' });
   }
 
   try {
-    const seller = await prisma.seller.findUnique({ where: { id: parseInt(sellerId) } });
-    const category = await prisma.category.findUnique({ where: { id: parseInt(categoryId) } });
+    const seller = await prisma.user.findUnique({ where: { id: sellerId } });
+    const category = await prisma.category.findUnique({ where: { id: parseInt(categoryId, 10) } });
 
     if (!seller || !category) {
       return res.status(404).json({ error: 'Seller or Category not found' });
@@ -93,8 +113,8 @@ router.post('/listings', async (req, res) => {
 
     const listing = await prisma.listing.create({
       data: {
-        sellerId: parseInt(sellerId),
-        categoryId: parseInt(categoryId),
+        sellerId: sellerId,
+        categoryId: parseInt(categoryId, 10),
         quantity: parseFloat(quantity),
         moisture: parseFloat(moisture || 40.0),
         purity: parseFloat(purity || 95.0),
@@ -106,7 +126,7 @@ router.post('/listings', async (req, res) => {
     await prisma.auditLog.create({
       data: {
         action: 'LISTING_PUBLISHED',
-        operator: seller.name,
+        operator: seller.name || seller.email,
         details: JSON.stringify({
           listingId: listing.id,
           categoryName: category.name,
@@ -119,12 +139,13 @@ router.post('/listings', async (req, res) => {
 
     res.status(201).json({ message: 'Listing published successfully', listing });
   } catch (error) {
+    console.error('Publish error:', error);
     res.status(500).json({ error: 'Internal server error while publishing listing' });
   }
 });
 
 // 3. Fetch active listings & buyers/sellers for Maps (GET /api/v1/listings)
-router.get('/listings', async (req, res) => {
+router.get('/listings', async (_req, res) => {
   try {
     const activeListings = await prisma.listing.findMany({
       where: { status: 'PENDING' },
@@ -134,8 +155,9 @@ router.get('/listings', async (req, res) => {
       },
     });
 
-    const buyers = await prisma.buyer.findMany();
-    const sellers = await prisma.seller.findMany({
+    const buyers = await prisma.user.findMany({ where: { role: 'BUYER' } });
+    const sellers = await prisma.user.findMany({
+      where: { role: 'SELLER' },
       include: {
         listings: {
           where: { status: 'PENDING' },
@@ -150,12 +172,16 @@ router.get('/listings', async (req, res) => {
       buyers,
     });
   } catch (error) {
+    console.error('Fetch listings error:', error);
     res.status(500).json({ error: 'Internal server error fetching listings' });
   }
 });
 
 // 4. Real-time Impact Scorecard & Trends (GET /api/v1/dashboard/stats)
-router.get('/dashboard/stats', async (req, res) => {
+router.get('/dashboard/stats', authenticateJWT, async (req: AuthRequest, res) => {
+  if (req.user?.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Forbidden: Admin clearance required' });
+  }
   try {
     const transactions = await prisma.transaction.findMany({
       include: { category: true },
@@ -176,33 +202,30 @@ router.get('/dashboard/stats', async (req, res) => {
     );
 
     // Sparkline Trends - group transaction carbon avoidance by month (last 6 months)
-    // We will generate the monthly list dynamically
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const monthlyDataMap: { [key: string]: number } = {};
 
-    // Initialize last 6 months with 0
     const today = new Date();
     const trendData: { name: string; value: number }[] = [];
 
     for (let i = 5; i >= 0; i--) {
       const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-      const mName = months[d.getMonth()];
+      const mName = months[d.getMonth()] as string;
       monthlyDataMap[mName] = 0;
       trendData.push({ name: mName, value: 0 });
     }
 
     transactions.forEach((t) => {
       const tDate = new Date(t.createdAt);
-      const mName = months[tDate.getMonth()];
-      if (monthlyDataMap[mName] !== undefined) {
+      const mName = months[tDate.getMonth()] as string;
+      if (mName && monthlyDataMap[mName] !== undefined) {
         monthlyDataMap[mName] += t.quantity / 1000; // Waste Diverted in Tonnes
       }
     });
 
-    // Update values in trendData
     const finalTrendData = trendData.map((item) => ({
       name: item.name,
-      value: parseFloat(monthlyDataMap[item.name].toFixed(2)),
+      value: parseFloat((monthlyDataMap[item.name] || 0).toFixed(2)),
     }));
 
     res.json({
@@ -214,12 +237,16 @@ router.get('/dashboard/stats', async (req, res) => {
       sparkline: finalTrendData,
     });
   } catch (error) {
+    console.error('Stats error:', error);
     res.status(500).json({ error: 'Internal server error loading dashboard stats' });
   }
 });
 
 // 5. Live Audit Ledger Table (GET /api/v1/transactions)
-router.get('/transactions', async (req, res) => {
+router.get('/transactions', authenticateJWT, async (req: AuthRequest, res) => {
+  if (req.user?.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Forbidden: Admin clearance required' });
+  }
   try {
     const auditLogs = await prisma.auditLog.findMany({
       orderBy: { timestamp: 'desc' },
@@ -228,6 +255,7 @@ router.get('/transactions', async (req, res) => {
 
     res.json(auditLogs);
   } catch (error) {
+    console.error('Transactions error:', error);
     res.status(500).json({ error: 'Internal server error fetching transactions' });
   }
 });

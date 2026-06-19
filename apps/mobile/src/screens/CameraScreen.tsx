@@ -4,6 +4,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Text } from '../components/ui/text';
 import { Button } from '../components/ui/button';
 import { AIResultCard } from '../components/ui/AIResultCard';
+import { getApiUrl } from '../utils/network';
 
 export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -12,9 +13,43 @@ export default function CameraScreen() {
   const [showModal, setShowModal] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [authToken, setAuthToken] = useState<string | null>(null);
 
   const cameraRef = useRef<any>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  // Auto-login hook for development seller environment
+  useEffect(() => {
+    const performDevLogin = async () => {
+      try {
+        console.log('Attempting auto-dev-login...');
+        const response = await fetch(`${getApiUrl()}/api/auth/sign-in`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: 'seller.thika@doki.com',
+            password: 'password123',
+          }),
+        });
+        if (!response.ok) {
+          throw new Error(`Auth server returned status ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.token) {
+          setAuthToken(data.token);
+          console.log('Authenticated as Thika Coffee Millers');
+        } else {
+          console.warn('Authentication response did not contain token');
+        }
+      } catch (err) {
+        console.error('Development auto-login failure:', err);
+      }
+    };
+
+    performDevLogin();
+  }, []);
 
   // Pulsing animation for loading leaf overlay
   useEffect(() => {
@@ -85,9 +120,9 @@ export default function CameraScreen() {
       setLoading(true);
       setErrorMessage(null);
 
-      // Capture photo and compress image to 50% quality to save cellular data
+      // Compress to 30% quality to save bandwidth and memory
       const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.5,
+        quality: 0.3,
         base64: true,
       });
 
@@ -96,10 +131,11 @@ export default function CameraScreen() {
       }
 
       // Send base64 payload to server
-      const response = await fetch('http://localhost:3001/api/v1/listings/classify', {
+      const response = await fetch(`${getApiUrl()}/api/v1/listings/classify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken || ''}`,
         },
         body: JSON.stringify({
           image: `data:image/jpeg;base64,${photo.base64}`,
@@ -141,13 +177,13 @@ export default function CameraScreen() {
       setIsPublishing(true);
       
       // Call backend to publish
-      const response = await fetch('http://localhost:3001/api/v1/listings', {
+      const response = await fetch(`${getApiUrl()}/api/v1/listings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken || ''}`,
         },
         body: JSON.stringify({
-          sellerId: 1, // Default Seller: Thika Coffee Millers
           categoryId: classificationResult.categoryId,
           quantity: 2500, // Default 2.5 tonnes demo volume
           moisture: classificationResult.moisture,
@@ -182,7 +218,7 @@ export default function CameraScreen() {
   return (
     <View className="flex-1 bg-black">
       {/* Camera Viewfinder */}
-      <CameraView style={StyleSheet.absoluteFillObject} ref={cameraRef}>
+      <CameraView style={StyleSheet.absoluteFill} ref={cameraRef}>
         {/* Top Header */}
         <SafeAreaView className="flex-row justify-between items-center px-6 mt-4">
           <View className="bg-black/50 px-4 py-2 rounded-full border border-white/10">

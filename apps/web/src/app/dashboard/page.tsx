@@ -11,16 +11,35 @@ import {
   Grid,
   Group,
   Loader,
+  RingProgress,
   ScrollArea,
   Stack,
   Table,
   Text,
+  ThemeIcon,
   Title,
 } from '@mantine/core';
-import { IconArrowLeft, IconDatabase, IconLeaf, IconReload } from '@tabler/icons-react';
+import {
+  IconArrowLeft,
+  IconDatabase,
+  IconLeaf,
+  IconRecycle,
+  IconReload,
+  IconTree,
+  IconTruck,
+} from '@tabler/icons-react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 
 // Dynamically load the Map component to prevent window-undefined SSR errors in Next.js
 const MapComponent = dynamic(() => import('@/components/MapComponent'), {
@@ -218,7 +237,7 @@ export default function OperatorDashboard() {
   useEffect(() => {
     if (!loading && !user) {
       router.push('/sign-in');
-    } else if (user) {
+    } else if (user && user.role === 'ADMIN') {
       const handle = setTimeout(() => {
         fetchData();
       }, 0);
@@ -226,7 +245,70 @@ export default function OperatorDashboard() {
     }
   }, [user, loading, router, fetchData]);
 
-  if (loading || !user || loadingData) {
+  if (loading || !user) {
+    return (
+      <Container
+        fluid
+        style={{
+          height: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#0b0f19',
+        }}
+      >
+        <Stack align="center" gap="md">
+          <Loader color="green" size="lg" type="dots" />
+          <Text color="gray.5" size="sm">Loading Doki Operator Portal...</Text>
+        </Stack>
+      </Container>
+    );
+  }
+
+  // Access Denied guard if user is loaded but not an ADMIN
+  if (user.role !== 'ADMIN') {
+    return (
+      <Container
+        fluid
+        style={{
+          height: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#0b0f19',
+        }}
+      >
+        <Card
+          p="xl"
+          radius="lg"
+          style={{
+            backgroundColor: '#111827',
+            border: '1px solid #dc2626',
+            maxWidth: '500px',
+            textAlign: 'center',
+            boxShadow: '0 10px 25px -5px rgba(220, 38, 38, 0.2)',
+          }}
+        >
+          <Stack align="center" gap="md">
+            <ThemeIcon color="red" size="xl" radius="xl">
+              <IconRecycle size={30} />
+            </ThemeIcon>
+            <Title order={2} style={{ color: '#f87171', fontWeight: 800 }}>
+              Access Denied
+            </Title>
+            <Text color="gray.4" size="sm">
+              The Operator Dashboard requires ADMIN clearance. Your account role is <strong>{user.role}</strong>.
+            </Text>
+            <Button variant="filled" color="green" onClick={() => router.push('/')}>
+              Return to Homepage
+            </Button>
+          </Stack>
+        </Card>
+      </Container>
+    );
+  }
+
+  if (loadingData) {
     return (
       <Container
         fluid
@@ -250,6 +332,14 @@ export default function OperatorDashboard() {
   const formatDate = (isoString: string) => {
     const d = new Date(isoString);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  };
+
+  const renderSafeJson = (details: string) => {
+    try {
+      return JSON.stringify(JSON.parse(details), null, 2);
+    } catch {
+      return details; // fallback to raw string
+    }
   };
 
   return (
@@ -461,7 +551,7 @@ export default function OperatorDashboard() {
                                       borderRadius: '6px',
                                     }}
                                   >
-                                    {JSON.stringify(JSON.parse(log.details), null, 2)}
+                                    {renderSafeJson(log.details)}
                                   </pre>
                                 </Box>
                               </Collapse>

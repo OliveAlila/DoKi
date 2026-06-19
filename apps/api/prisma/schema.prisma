@@ -6,13 +6,29 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum Role {
+  SELLER
+  BUYER
+  ADMIN
+}
+
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  name         String?
+  password     String
+  role         Role     @default(SELLER)
+  companyName  String?
+  contactPhone String?
+  latitude     Float?
+  longitude    Float?
+  address      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  listings              Listing[]     @relation("SellerListings")
+  salesTransactions     Transaction[] @relation("SellerTx")
+  purchasesTransactions Transaction[] @relation("BuyerTx")
 }
 
 model Category {
@@ -23,29 +39,10 @@ model Category {
   transactions Transaction[]
 }
 
-model Seller {
-  id           Int           @id @default(autoincrement())
-  name         String        @unique
-  latitude     Float
-  longitude    Float
-  address      String
-  listings     Listing[]
-  transactions Transaction[]
-}
-
-model Buyer {
-  id           Int           @id @default(autoincrement())
-  name         String        @unique
-  latitude     Float
-  longitude    Float
-  address      String
-  transactions Transaction[]
-}
-
 model Listing {
   id         Int      @id @default(autoincrement())
   sellerId   Int
-  seller     Seller   @relation(fields: [sellerId], references: [id])
+  seller     User     @relation("SellerListings", fields: [sellerId], references: [id])
   categoryId Int
   category   Category @relation(fields: [categoryId], references: [id])
   quantity   Float    // in Kg
@@ -59,9 +56,9 @@ model Listing {
 model Transaction {
   id             Int      @id @default(autoincrement())
   sellerId       Int
-  seller         Seller   @relation(fields: [sellerId], references: [id])
+  seller         User     @relation("SellerTx", fields: [sellerId], references: [id])
   buyerId        Int
-  buyer          Buyer    @relation(fields: [buyerId], references: [id])
+  buyer          User     @relation("BuyerTx", fields: [buyerId], references: [id])
   categoryId     Int
   category       Category @relation(fields: [categoryId], references: [id])
   quantity       Float    // in Kg
