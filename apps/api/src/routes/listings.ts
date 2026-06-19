@@ -41,9 +41,9 @@ router.post('/listings/classify', authenticateJWT, async (req: AuthRequest, res)
 
     let resultJson: any;
     try {
-      const rawText = response.text || '';
-      const cleanText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-      resultJson = JSON.parse(cleanText || '{}');
+      const responseText = response.text || '';
+      const sanitizedText = responseText.replace(/```json|```/g, '').trim();
+      resultJson = JSON.parse(sanitizedText);
     } catch (parseError) {
       console.warn('JSON parsing of Gemini response failed, applying robust fallback/regex:', parseError);
       const rawText = response.text || '';
