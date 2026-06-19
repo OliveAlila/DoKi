@@ -289,4 +289,125 @@ router.get('/transactions', authenticateJWT, async (req: AuthRequest, res) => {
   }
 });
 
+// 6. Fetch specific listing by ID (GET /api/v1/listings/:id)
+router.get('/listings/:id', async (req, res) => {
+  try {
+    const listing = await prisma.listing.findUnique({
+      where: { id: parseInt(req.params.id, 10) },
+      include: {
+        seller: true,
+        category: true,
+      },
+    });
+
+    if (!listing) {
+      return res.status(404).json({ error: 'Listing not found' });
+    }
+
+    res.json(listing);
+  } catch (error) {
+    console.error('Fetch listing by ID error:', error);
+    res.status(500).json({ error: 'Internal server error fetching listing' });
+  }
+});
+
+// 7. Express Sourcing Interest (POST /api/v1/transactions/interest)
+router.post('/transactions/interest', authenticateJWT, async (req: AuthRequest, res) => {
+  const { listingId } = req.body;
+  const buyerId = req.user?.userId;
+  const role = req.user?.role;
+
+  if (role !== 'BUYER') {
+    return res.status(403).json({ error: 'Only buyers can express interest' });
+  }
+
+  if (!listingId || !buyerId) {
+    return res.status(400).json({ error: 'Missing required parameters' });
+  }
+
+  try {
+    const listing = await prisma.listing.findUnique({
+      where: { id: parseInt(listingId, 10) },
+      include: { category: true },
+    });
+
+    if (!listing) {
+      return res.status(404).json({ error: 'Listing not found' });
+    }
+
+    if (listing.status !== 'PENDING') {
+      return res.status(400).json({ error: 'Listing is no longer available' });
+    }
+
+    // IPCC Tier 1 Math for environmental footprint estimation
+    const qtyTonnes = listing.quantity / 1000;
+    const methaneAvoided = qtyTonnes * listing.category.doc * 0.333;
+    const co2eReduced = methaneAvoided * 28;
+
+    // Update listing status to IN_TRANSIT
+    const updatedListing = await prisma.listing.update({
+      where: { id: listing.id },
+      data: { status: 'IN_TRANSIT' },
+    });
+
+    // Create a transaction record
+    const transaction = await prisma.transaction.create({
+      data: {
+        sellerId: listing.sellerId,
+        buyerId: buyerId,
+        categoryId: listing.categoryId,
+        quantity: listing.quantity,
+        moisture: listing.moisture,
+        purity: listing.purity,
+        methaneAvoided: parseFloat(methaneAvoided.toFixed(3)),
+        co2eReduced: parseFloat(co2eReduced.toFixed(3)),
+      },
+    });
+
+    // Audit Log
+    await prisma.auditLog.create({
+      data: {
+        action: 'TRANSACTION_INTEREST_LOGGED',
+        operator: 'Buyer',
+        details: JSON.stringify({
+          listingId: listing.id,
+          transactionId: transaction.id,
+          buyerId,
+        }),
+      },
+    });
+
+    res.status(201).json({ message: 'Interest expressed successfully', transaction, listing: updatedListing });
+  } catch (error) {
+    console.error('Express interest error:', error);
+    res.status(500).json({ error: 'Internal server error while expressing interest' });
+  }
+});
+
+// 8. Fetch Buyer Specific Transactions for ESG Scorecard (GET /api/v1/buyer/transactions)
+router.get('/buyer/transactions', authenticateJWT, async (req: AuthRequest, res) => {
+  const buyerId = req.user?.userId;
+  const role = req.user?.role;
+
+  if (role !== 'BUYER') {
+    return res.status(403).json({ error: 'Forbidden: Buyer clearance required' });
+  }
+
+  try {
+    const transactions = await prisma.transaction.findMany({
+      where: { buyerId },
+      include: {
+        category: true,
+        seller: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json(transactions);
+  } catch (error) {
+    console.error('Fetch buyer transactions error:', error);
+    res.status(500).json({ error: 'Internal server error fetching buyer transactions' });
+  }
+});
+
 export default router;

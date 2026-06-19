@@ -10,6 +10,10 @@ type User = {
   email: string;
   name?: string;
   role: string;
+  latitude?: number;
+  longitude?: number;
+  companyName?: string;
+  address?: string;
 };
 
 type AuthContextType = {
