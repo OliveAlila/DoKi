@@ -124,6 +124,14 @@ dist
 # Bun
 .bun
 
+# SQLite databases
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
 # Editor directories and files
 .idea
 .vscode/*

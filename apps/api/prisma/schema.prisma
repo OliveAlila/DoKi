@@ -14,3 +14,69 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Category {
+  id           Int           @id @default(autoincrement())
+  name         String        @unique
+  doc          Float
+  listings     Listing[]
+  transactions Transaction[]
+}
+
+model Seller {
+  id           Int           @id @default(autoincrement())
+  name         String        @unique
+  latitude     Float
+  longitude    Float
+  address      String
+  listings     Listing[]
+  transactions Transaction[]
+}
+
+model Buyer {
+  id           Int           @id @default(autoincrement())
+  name         String        @unique
+  latitude     Float
+  longitude    Float
+  address      String
+  transactions Transaction[]
+}
+
+model Listing {
+  id         Int      @id @default(autoincrement())
+  sellerId   Int
+  seller     Seller   @relation(fields: [sellerId], references: [id])
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id])
+  quantity   Float    // in Kg
+  moisture   Float    // percentage (e.g. 45.0)
+  purity     Float    // percentage (e.g. 98.5)
+  status     String   @default("PENDING") // PENDING, COMPLETED, CANCELLED
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Transaction {
+  id             Int      @id @default(autoincrement())
+  sellerId       Int
+  seller         Seller   @relation(fields: [sellerId], references: [id])
+  buyerId        Int
+  buyer          Buyer    @relation(fields: [buyerId], references: [id])
+  categoryId     Int
+  category       Category @relation(fields: [categoryId], references: [id])
+  quantity       Float    // in Kg
+  moisture       Float    // percentage
+  purity         Float    // percentage
+  methaneAvoided Float    // calculated methane avoided in Tonnes
+  co2eReduced    Float    // methaneAvoided * 28
+  createdAt      DateTime @default(now())
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  timestamp DateTime @default(now())
+  action    String
+  operator  String
+  details   String   // JSON string
+}
+

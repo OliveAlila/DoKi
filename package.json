@@ -1,15 +1,47 @@
 {
   "name": "doki",
-  "module": "index.ts",
-  "type": "module",
   "private": true,
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
+  "type": "module",
+  "packageManager": "bun@1.3.14",
   "workspaces": [
     "apps/*"
-  ]
+  ],
+  "scripts": {
+    "dev": "concurrently --names \"API,WEB\" --prefix-colors \"green.bold,cyan.bold\" --prefix \"[{name}]\" \"bun --filter api dev\" \"bun --filter web dev\"",
+    "dev:api": "bun --filter api dev",
+    "dev:web": "bun --filter web dev",
+    "dev:mobile": "cd apps/mobile && bun run dev",
+    "dev:all": "concurrently --names \"API,WEB,MOBILE\" --prefix-colors \"green.bold,cyan.bold,magenta.bold\" --prefix \"[{name}]\" \"bun --filter api dev\" \"bun --filter web dev\" \"bun --filter mobile dev\"",
+
+    "start:api": "bun --filter api start",
+    "start:web": "bun --filter web start",
+    "start:mobile": "bun --filter mobile start",
+
+    "build": "bun --filter web build",
+    "build:web": "bun --filter web build",
+
+    "android": "bun --filter mobile android",
+    "ios": "bun --filter mobile ios",
+
+    "typecheck": "concurrently --names \"API,WEB,MOBILE\" --prefix-colors \"green.bold,cyan.bold,magenta.bold\" --prefix \"[{name}]\" \"bun --filter api typecheck\" \"bun --filter web typecheck\" \"bun --filter mobile typecheck\"",
+    "typecheck:api": "bun --filter api typecheck",
+    "typecheck:web": "bun --filter web typecheck",
+    "typecheck:mobile": "bun --filter mobile typecheck",
+
+    "lint:web": "bun --filter web lint",
+
+    "db:generate": "bun --filter api db:generate",
+    "db:push": "bun --filter api db:push",
+    "db:migrate": "bun --filter api db:migrate",
+    "db:seed": "bun --filter api db:seed",
+    "db:studio": "bun --filter api db:studio",
+
+    "reinstall": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' + || true; rm -f bun.lock; bun install"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "babel-preset-expo": "^56.0.15",
+    "concurrently": "^10.0.3",
+    "typescript": "^5"
+  }
 }

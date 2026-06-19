@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '@/db';
+import { hashPassword, verifyPassword } from '@/utils/hash';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
@@ -17,9 +18,10 @@ router.post('/sign-up', async (req, res) => {
       return res.status(400).json({ error: 'User already exists' });
     }
 
-    // In a real app, hash the password
+    // Hash the password
+    const hashedPassword = hashPassword(password);
     const user = await prisma.user.create({
-      data: { email, password, name },
+      data: { email, password: hashedPassword, name },
     });
 
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1d' });
@@ -42,9 +44,10 @@ router.post('/sign-in', async (req, res) => {
 
   try {
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user || user.password !== password) {
+    if (!user || !verifyPassword(password, user.password)) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
 
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '1d' });
 
