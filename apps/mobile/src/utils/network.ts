@@ -1,9 +1,10 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { env } from '../env';
 
 export const getApiUrl = () => {
-  if (process.env.EXPO_PUBLIC_API_URL) {
-    return process.env.EXPO_PUBLIC_API_URL;
+  if (env.EXPO_PUBLIC_API_URL) {
+    return env.EXPO_PUBLIC_API_URL;
   }
   
   // Resolve host machine IP in Expo development mode

@@ -3,13 +3,11 @@ import jwt from 'jsonwebtoken';
 import { rateLimit } from 'express-rate-limit';
 import prisma from '@/db';
 import { hashPassword, verifyPassword } from '@/utils/hash';
+import { env } from '@/env';
 
 const router = Router();
 
-if (!process.env.JWT_SECRET) {
-  throw new Error('FATAL: JWT_SECRET environment variable is missing.');
-}
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = env.JWT_SECRET;
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -47,7 +45,7 @@ router.post('/sign-up', authLimiter, async (req, res) => {
 
     res.cookie('auth_token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: env.NODE_ENV === 'production',
       maxAge: 24 * 60 * 60 * 1000,
       sameSite: 'lax',
     });
@@ -76,7 +74,7 @@ router.post('/sign-in', authLimiter, async (req, res) => {
 
     res.cookie('auth_token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: env.NODE_ENV === 'production',
       maxAge: 24 * 60 * 60 * 1000,
       sameSite: 'lax',
     });

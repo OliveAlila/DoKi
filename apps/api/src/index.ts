@@ -3,20 +3,21 @@ import cors from 'cors';
 import express from 'express';
 import authRoutes from '@/routes/auth.ts';
 import listingsRoutes from '@/routes/listings.ts';
+import { env } from '@/env.ts';
 
 const app = express();
-const port = process.env.PORT || 3001;
+const port = env.PORT;
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (process.env.NODE_ENV !== 'production') {
+    if (env.NODE_ENV !== 'production') {
       if (!origin || /^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin) || /^http:\/\/10\.\d+\.\d+\.\d+:\d+$/.test(origin) || /^http:\/\/192\.168\.\d+\.\d+:\d+$/.test(origin)) {
         return callback(null, true);
       }
     }
     
     // Production strict origins
-    const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['https://doki.com'];
+    const allowedOrigins = env.ALLOWED_ORIGINS ? env.ALLOWED_ORIGINS.split(',') : ['https://doki.com'];
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {

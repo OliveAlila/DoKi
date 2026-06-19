@@ -4,12 +4,11 @@ import prisma from '@/db';
 import type { AuthRequest } from '@/middleware/auth';
 import { authenticateJWT } from '@/middleware/auth';
 
+import { env } from '@/env';
+
 const router = Router();
 
-if (!process.env.GEMINI_API_KEY) {
-  throw new Error('FATAL: GEMINI_API_KEY environment variable is missing.');
-}
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
 
 interface ClassificationResult {
   categoryName?: string;

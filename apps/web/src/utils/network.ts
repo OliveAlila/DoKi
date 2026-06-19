@@ -1,6 +1,8 @@
+import { env } from '../env';
+
 export const getApiUrl = (): string => {
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
+  if (env.NEXT_PUBLIC_API_URL) {
+    return env.NEXT_PUBLIC_API_URL;
   }
   
   // Resolve host machine IP in browser for testing on local network (e.g. tablet, phone)
