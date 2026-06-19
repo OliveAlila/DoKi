@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
+import { getApiUrl } from '@/utils/network';
 import {
   Badge,
   Box,
@@ -11,7 +12,6 @@ import {
   Grid,
   Group,
   Loader,
-  RingProgress,
   ScrollArea,
   Stack,
   Table,
@@ -25,21 +25,10 @@ import {
   IconLeaf,
   IconRecycle,
   IconReload,
-  IconTree,
-  IconTruck,
 } from '@tabler/icons-react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 
 // Dynamically load the Map component to prevent window-undefined SSR errors in Next.js
 const MapComponent = dynamic(() => import('@/components/MapComponent'), {
@@ -183,15 +172,15 @@ export default function OperatorDashboard() {
       setRefreshing(true);
 
       // Fetch Scorecard Stats & Sparkline trends
-      const statsRes = await fetch('http://localhost:3001/api/v1/dashboard/stats', { credentials: 'include' });
+      const statsRes = await fetch(`${getApiUrl()}/api/v1/dashboard/stats`, { credentials: 'include' });
       const statsData = await statsRes.json();
 
       // Fetch Map pins (active listings and buyer/seller profiles)
-      const listingsRes = await fetch('http://localhost:3001/api/v1/listings', { credentials: 'include' });
+      const listingsRes = await fetch(`${getApiUrl()}/api/v1/listings`, { credentials: 'include' });
       const listingsData = await listingsRes.json();
 
       // Fetch Transaction Audit Trail
-      const logsRes = await fetch('http://localhost:3001/api/v1/transactions', { credentials: 'include' });
+      const logsRes = await fetch(`${getApiUrl()}/api/v1/transactions`, { credentials: 'include' });
       const logsData = await logsRes.json();
 
       if (statsRes.ok) setStats(statsData);

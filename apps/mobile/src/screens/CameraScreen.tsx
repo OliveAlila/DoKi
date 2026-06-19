@@ -6,6 +6,11 @@ import { Button } from '../components/ui/button';
 import { AIResultCard } from '../components/ui/AIResultCard';
 import { getApiUrl } from '../utils/network';
 
+const getAuthorizationHeader = (token: string | null) => {
+  if (!token) return '';
+  return token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+};
+
 export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [loading, setLoading] = useState(false);
@@ -135,7 +140,7 @@ export default function CameraScreen() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken || ''}`,
+          'Authorization': getAuthorizationHeader(authToken),
         },
         body: JSON.stringify({
           image: `data:image/jpeg;base64,${photo.base64}`,
@@ -181,7 +186,7 @@ export default function CameraScreen() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken || ''}`,
+          'Authorization': getAuthorizationHeader(authToken),
         },
         body: JSON.stringify({
           categoryId: classificationResult.categoryId,

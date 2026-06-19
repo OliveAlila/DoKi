@@ -3,6 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { createContext, useContext } from 'react';
+import { getApiUrl } from '@/utils/network';
 
 type User = {
   id: number;
@@ -26,7 +27,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { data: user, isLoading } = useQuery<User | null>({
     queryKey: ['user'],
     queryFn: async () => {
-      const res = await fetch('http://localhost:3001/api/auth/me', { credentials: 'include' });
+      const res = await fetch(`${getApiUrl()}/api/auth/me`, { credentials: 'include' });
       if (!res.ok) return null;
       const data = await res.json();
       return data.user;
@@ -39,7 +40,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    await fetch('http://localhost:3001/api/auth/sign-out', { method: 'POST', credentials: 'include' });
+    await fetch(`${getApiUrl()}/api/auth/sign-out`, { method: 'POST', credentials: 'include' });
     queryClient.setQueryData(['user'], null);
   };
 

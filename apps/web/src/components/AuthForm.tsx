@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { z } from 'zod';
 import { useAuth } from '@/context/AuthContext';
+import { getApiUrl } from '@/utils/network';
 
 const authSchema = z.object({
   name: z.string().optional(),
@@ -37,7 +38,7 @@ export function AuthForm({ type }: { type: 'sign-in' | 'sign-up' }) {
   const mutation = useMutation({
     mutationFn: async (values: typeof form.values) => {
       const endpoint = type === 'sign-in' ? '/api/auth/sign-in' : '/api/auth/sign-up';
-      const res = await fetch(`http://localhost:3001${endpoint}`, {
+      const res = await fetch(`${getApiUrl()}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
