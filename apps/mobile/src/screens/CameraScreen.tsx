@@ -6,6 +6,24 @@ import { Button } from '../components/ui/button';
 import { AIResultCard } from '../components/ui/AIResultCard';
 import { getApiUrl } from '../utils/network';
 
+export interface ClassificationResult {
+  categoryId: number;
+  categoryName: string;
+  confidence: number;
+  moisture: number;
+  purity: number;
+  flaggedContaminants: string[];
+}
+
+export const OFFLINE_FALLBACK_RESULT: ClassificationResult = {
+  categoryId: 2,
+  categoryName: 'Coffee Pulp',
+  confidence: 0.89,
+  moisture: 45.0,
+  purity: 97.5,
+  flaggedContaminants: [],
+};
+
 const getAuthorizationHeader = (token: string | null) => {
   if (!token) return '';
   return token.startsWith('Bearer ') ? token : `Bearer ${token}`;
@@ -14,47 +32,14 @@ const getAuthorizationHeader = (token: string | null) => {
 export default function CameraScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [loading, setLoading] = useState(false);
-  const [classificationResult, setClassificationResult] = useState<any>(null);
+  const [classificationResult, setClassificationResult] = useState<ClassificationResult | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
 
-  const cameraRef = useRef<any>(null);
+  const cameraRef = useRef<CameraView | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  // Auto-login hook for development seller environment
-  useEffect(() => {
-    const performDevLogin = async () => {
-      try {
-        console.log('Attempting auto-dev-login...');
-        const response = await fetch(`${getApiUrl()}/api/auth/sign-in`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: 'seller.thika@doki.com',
-            password: 'password123',
-          }),
-        });
-        if (!response.ok) {
-          throw new Error(`Auth server returned status ${response.status}`);
-        }
-        const data = await response.json();
-        if (data.token) {
-          setAuthToken(data.token);
-          console.log('Authenticated as Thika Coffee Millers');
-        } else {
-          console.warn('Authentication response did not contain token');
-        }
-      } catch (err) {
-        console.error('Development auto-login failure:', err);
-      }
-    };
-
-    performDevLogin();
-  }, []);
 
   // Pulsing animation for loading leaf overlay
   useEffect(() => {
@@ -161,14 +146,7 @@ export default function CameraScreen() {
       
       // Seed a realistic local prediction
       setTimeout(() => {
-        setClassificationResult({
-          categoryId: 2,
-          categoryName: 'Coffee Pulp',
-          confidence: 0.89,
-          moisture: 45.0,
-          purity: 97.5,
-          flaggedContaminants: [],
-        });
+        setClassificationResult(OFFLINE_FALLBACK_RESULT);
         setShowModal(true);
       }, 1000);
     } finally {

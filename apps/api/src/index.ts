@@ -9,8 +9,15 @@ const port = process.env.PORT || 3001;
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow local development origins (Vite 5173, Next.js 3000, etc.)
-    if (!origin || /^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) {
+    if (process.env.NODE_ENV !== 'production') {
+      if (!origin || /^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin) || /^http:\/\/10\.\d+\.\d+\.\d+:\d+$/.test(origin) || /^http:\/\/192\.168\.\d+\.\d+:\d+$/.test(origin)) {
+        return callback(null, true);
+      }
+    }
+    
+    // Production strict origins
+    const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['https://doki.com'];
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));

@@ -28,7 +28,8 @@ import {
 } from '@tabler/icons-react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 // Dynamically load the Map component to prevent window-undefined SSR errors in Next.js
 const MapComponent = dynamic(() => import('@/components/MapComponent'), {
@@ -157,38 +158,22 @@ export default function OperatorDashboard() {
   const router = useRouter();
 
   // Component States
-  const [stats, setStats] = useState<{ scorecard: Scorecard; sparkline: SparklineItem[] } | null>(null);
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [mapPins, setMapPins] = useState<MapPin[]>([]);
-  const [loadingData, setLoadingData] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [expandedLogId, setExpandedLogId] = useState<number | null>(null);
 
-  // Fetch all dashboard data from backend APIs
-  const fetchData = useCallback(async () => {
-    try {
-      // Defer synchronous state update to a microtask to resolve effect rendering warnings
-      await Promise.resolve();
-      setRefreshing(true);
-
-      // Fetch Scorecard Stats & Sparkline trends
+  const { data: dashboardData, isLoading: loadingData, refetch, isRefetching: refreshing } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: async () => {
       const statsRes = await fetch(`${getApiUrl()}/api/v1/dashboard/stats`, { credentials: 'include' });
       const statsData = await statsRes.json();
 
-      // Fetch Map pins (active listings and buyer/seller profiles)
       const listingsRes = await fetch(`${getApiUrl()}/api/v1/listings`, { credentials: 'include' });
       const listingsData = await listingsRes.json();
 
-      // Fetch Transaction Audit Trail
       const logsRes = await fetch(`${getApiUrl()}/api/v1/transactions`, { credentials: 'include' });
       const logsData = await logsRes.json();
 
-      if (statsRes.ok) setStats(statsData);
-      if (logsRes.ok) setAuditLogs(logsData);
-      
+      const pins: MapPin[] = [];
       if (listingsRes.ok) {
-        const pins: MapPin[] = [];
-        // Map Sellers
         listingsData.sellers.forEach((s: SellerWithListings) => {
           const activeListingsText = s.listings.map((l: ListingWithCategory) => `${l.category.name} (${l.quantity} Kg)`).join(', ');
           pins.push({
@@ -201,7 +186,6 @@ export default function OperatorDashboard() {
             details: activeListingsText ? `Active Listings: ${activeListingsText}` : 'No active listings currently',
           });
         });
-        // Map Buyers
         listingsData.buyers.forEach((b: Buyer) => {
           pins.push({
             id: b.id,
@@ -213,26 +197,30 @@ export default function OperatorDashboard() {
             details: 'Bioenergy & Compost Offtaker',
           });
         });
-        setMapPins(pins);
       }
-    } catch (err) {
-      console.error('Failed to load dashboard data:', err);
-    } finally {
-      setLoadingData(false);
-      setRefreshing(false);
-    }
-  }, []);
+
+      return {
+        stats: statsRes.ok ? statsData : null,
+        auditLogs: logsRes.ok ? logsData : [],
+        mapPins: pins,
+      };
+    },
+    enabled: !!user && user.role === 'ADMIN',
+  });
+
+  const stats: { scorecard: Scorecard; sparkline: SparklineItem[] } | null = dashboardData?.stats || null;
+  const auditLogs: AuditLog[] = dashboardData?.auditLogs || [];
+  const mapPins: MapPin[] = dashboardData?.mapPins || [];
+
+  const fetchData = async () => {
+    await refetch();
+  };
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/sign-in');
-    } else if (user && user.role === 'ADMIN') {
-      const handle = setTimeout(() => {
-        fetchData();
-      }, 0);
-      return () => clearTimeout(handle);
     }
-  }, [user, loading, router, fetchData]);
+  }, [user, loading, router]);
 
   if (loading || !user) {
     return (

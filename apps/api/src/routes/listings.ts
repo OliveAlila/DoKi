@@ -5,7 +5,19 @@ import type { AuthRequest } from '@/middleware/auth';
 import { authenticateJWT } from '@/middleware/auth';
 
 const router = Router();
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || 'dummy-key' });
+
+if (!process.env.GEMINI_API_KEY) {
+  throw new Error('FATAL: GEMINI_API_KEY environment variable is missing.');
+}
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+interface ClassificationResult {
+  categoryName?: string;
+  confidence?: number;
+  moisture?: number;
+  purity?: number;
+  flaggedContaminants?: string[];
+}
 
 // 1. Camera Classification Flow (POST /api/v1/listings/classify)
 router.post('/listings/classify', authenticateJWT, async (req: AuthRequest, res) => {
@@ -39,7 +51,7 @@ router.post('/listings/classify', authenticateJWT, async (req: AuthRequest, res)
       }
     });
 
-    let resultJson: any;
+    let resultJson: ClassificationResult;
     try {
       const responseText = response.text || '';
       const sanitizedText = responseText.replace(/```json|```/g, '').trim();

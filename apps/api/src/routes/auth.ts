@@ -1,12 +1,25 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
+import { rateLimit } from 'express-rate-limit';
 import prisma from '@/db';
 import { hashPassword, verifyPassword } from '@/utils/hash';
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';
 
-router.post('/sign-up', async (req, res) => {
+if (!process.env.JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET environment variable is missing.');
+}
+const JWT_SECRET = process.env.JWT_SECRET;
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per `window`
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+});
+
+router.post('/sign-up', authLimiter, async (req, res) => {
   const { email, password, name, role } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' });
@@ -44,12 +57,13 @@ router.post('/sign-up', async (req, res) => {
       token,
       user: { id: user.id, email: user.email, name: user.name, role: user.role },
     });
-  } catch (_error) {
+  } catch (error) {
+    console.error('Sign-up error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-router.post('/sign-in', async (req, res) => {
+router.post('/sign-in', authLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   try {
@@ -72,7 +86,8 @@ router.post('/sign-in', async (req, res) => {
       token,
       user: { id: user.id, email: user.email, name: user.name, role: user.role },
     });
-  } catch (_error) {
+  } catch (error) {
+    console.error('Sign-in error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -97,7 +112,8 @@ router.get('/me', async (req, res) => {
       return res.status(401).json({ error: 'User not found' });
     }
     res.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role } });
-  } catch (_error) {
+  } catch (error) {
+    console.error('Verify /me error:', error);
     res.status(401).json({ error: 'Invalid token' });
   }
 });
