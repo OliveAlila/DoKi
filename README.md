@@ -10,6 +10,27 @@ This project is a monorepo managed with Bun workspaces.
 - `apps/web`: Next.js 15 web dashboard. Features an interactive climate console, landfill avoidance stats, and geo-spatial proximity maps using Leaflet and Recharts.
 - `apps/mobile`: Expo / React Native mobile client. Features an AI scanner for organic waste classification built with NativeWind v4 for styling.
 
+## Environment Variables Configuration
+
+Doki uses a strict, Zod-validated environment variable system to ensure the application fails fast if critical configuration is missing.
+
+Template files are provided in each app's directory:
+- `apps/api/.env.example`
+- `apps/web/.env.example`
+- `apps/mobile/.env.example`
+
+1. **Copy the example files**:
+   ```bash
+   cp apps/api/.env.example apps/api/.env
+   cp apps/web/.env.example apps/web/.env
+   cp apps/mobile/.env.example apps/mobile/.env
+   ```
+2. **Fill in required secrets**:
+   - `JWT_SECRET` (API): Required for the API to sign authentication tokens.
+   - `GEMINI_API_KEY` (API): Required for the API's AI image classification features.
+
+**Note**: If these variables are missing, the applications will immediately crash on startup with a clear validation error.
+
 ## Scripts
 
 All primary commands should be run from the repository root using Bun.
@@ -56,19 +77,28 @@ The database operations are routed to the API workspace.
    bun install
    ```
 
-2. Generate the Prisma client and seed the database:
+2. Configure Environment Variables:
+   Copy the respective `.env.example` files to `.env` in each workspace:
+   ```bash
+   cp apps/api/.env.example apps/api/.env
+   cp apps/web/.env.example apps/web/.env
+   cp apps/mobile/.env.example apps/mobile/.env
+   ```
+   Fill in your `JWT_SECRET` and `GEMINI_API_KEY` in `apps/api/.env`.
+
+3. Generate the Prisma client and seed the database:
    ```bash
    bun db:generate
    bun db:push
    bun db:seed
    ```
 
-3. Start the primary services (API and Web):
+4. Start the primary services (API and Web):
    ```bash
    bun dev
    ```
 
-4. Start the mobile app (in a separate terminal for interactive mode):
+5. Start the mobile app (in a separate terminal for interactive mode):
    ```bash
    bun dev:mobile
    ```
