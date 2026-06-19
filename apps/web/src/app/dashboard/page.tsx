@@ -471,7 +471,7 @@ export default function OperatorDashboard() {
                     </Table.Tr>
                   </Table.Thead>
                   <Table.Tbody>
-                    {auditLogs.map((log) => {
+                    {auditLogs.slice(0, 5).map((log) => {
                       const isExpanded = expandedLogId === log.id;
                       let badgeColor = 'blue';
                       if (log.action === 'TRANSACTION_COMPLETED') badgeColor = 'emerald';

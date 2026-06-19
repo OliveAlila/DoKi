@@ -1,8 +1,10 @@
 import { AppShellNavbar, NavLink, Stack, Tooltip, Button } from "@mantine/core";
 import {
   IconLayoutDashboard,
-  IconDatabase,
-  IconMap,
+  IconLeaf,
+  IconUsers,
+  IconShieldCheck,
+  IconTerminal2,
   IconLogout,
 } from "@tabler/icons-react";
 import Link from "next/link";
@@ -11,19 +13,29 @@ import { useAuth } from "@/context/AuthContext";
 
 const NAV_LINKS = [
   {
-    label: "Console",
+    label: "Overview Console",
     to: "/dashboard",
     leftSection: <IconLayoutDashboard size={20} />,
   },
   {
-    label: "Ledger",
-    to: "/dashboard#ledger",
-    leftSection: <IconDatabase size={20} />,
+    label: "Ecological Tracing",
+    to: "/dashboard/carbon",
+    leftSection: <IconLeaf size={20} />,
   },
   {
-    label: "Map",
-    to: "/dashboard#map",
-    leftSection: <IconMap size={20} />,
+    label: "User Registry",
+    to: "/dashboard/users",
+    leftSection: <IconUsers size={20} />,
+  },
+  {
+    label: "Marketplace Moderation",
+    to: "/dashboard/listings",
+    leftSection: <IconShieldCheck size={20} />,
+  },
+  {
+    label: "System Logs",
+    to: "/dashboard/logs",
+    leftSection: <IconTerminal2 size={20} />,
   },
 ] as const;
 
