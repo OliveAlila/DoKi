@@ -8,7 +8,8 @@ import { env } from '@/env';
 
 const router = Router();
 
-const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+// Only initialize Gemini if we have a key and aren't strictly simulating
+const ai = env.GEMINI_API_KEY && !env.SIMULATE_AI ? new GoogleGenAI({ apiKey: env.GEMINI_API_KEY }) : null;
 
 interface ClassificationResult {
   categoryName?: string;
@@ -33,49 +34,66 @@ router.post('/listings/classify', authenticateJWT, async (req: AuthRequest, res)
 
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
     
-    // Call Gemini 2.5 Flash API
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-preview-09-2025',
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { inlineData: { data: base64Data, mimeType: 'image/jpeg' } },
-            { text: `Analyze this image of agricultural waste. Determine the category among: [${categories.map(c => c.name).join(', ')}]. Provide an estimated confidence score between 0 and 1, estimated moisture percentage (e.g., 45.0), estimated purity percentage (e.g., 98.5), and an array of any flagged contaminants. Respond strictly with JSON: { "categoryName": "string", "confidence": number, "moisture": number, "purity": number, "flaggedContaminants": ["string"] }.` }
-          ]
-        }
-      ],
-      config: {
-        responseMimeType: 'application/json',
-      }
-    });
-
     let resultJson: ClassificationResult;
-    try {
-      const responseText = response.text || '';
-      const sanitizedText = responseText.replace(/```json|```/g, '').trim();
-      resultJson = JSON.parse(sanitizedText);
-    } catch (parseError) {
-      console.warn('JSON parsing of Gemini response failed, applying robust fallback/regex:', parseError);
-      const rawText = response.text || '';
-      
-      const categoryRegex = /"categoryName"\s*:\s*"([^"]+)"/i;
-      const confidenceRegex = /"confidence"\s*:\s*([0-9.]+)/;
-      const moistureRegex = /"moisture"\s*:\s*([0-9.]+)/;
-      const purityRegex = /"purity"\s*:\s*([0-9.]+)/;
-      
-      const catMatch = rawText.match(categoryRegex);
-      const confMatch = rawText.match(confidenceRegex);
-      const moistMatch = rawText.match(moistureRegex);
-      const purityMatch = rawText.match(purityRegex);
 
+    if (env.SIMULATE_AI) {
+      // Phase 2: Mock Engine
+      await new Promise(res => setTimeout(res, 800)); // Simulate network payload round-trip
       resultJson = {
-        categoryName: (catMatch && catMatch[1]) ? catMatch[1] : (categories[0]?.name || 'Coffee Pulp'),
-        confidence: (confMatch && confMatch[1]) ? parseFloat(confMatch[1]) : 0.85,
-        moisture: (moistMatch && moistMatch[1]) ? parseFloat(moistMatch[1]) : 45.0,
-        purity: (purityMatch && purityMatch[1]) ? parseFloat(purityMatch[1]) : 95.0,
-        flaggedContaminants: [],
+        categoryName: categories[0]?.name || 'Coffee Pulp',
+        confidence: 0.94,
+        moisture: 45.5,
+        purity: 98.2,
+        flaggedContaminants: []
       };
+    } else {
+      if (!ai) {
+        return res.status(500).json({ error: 'AI Simulation is disabled, but no GEMINI_API_KEY is configured.' });
+      }
+
+      // Call Gemini 2.5 Flash API
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-preview-09-2025',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { inlineData: { data: base64Data, mimeType: 'image/jpeg' } },
+              { text: `Analyze this image of agricultural waste. Determine the category among: [${categories.map(c => c.name).join(', ')}]. Provide an estimated confidence score between 0 and 1, estimated moisture percentage (e.g., 45.0), estimated purity percentage (e.g., 98.5), and an array of any flagged contaminants. Respond strictly with JSON: { "categoryName": "string", "confidence": number, "moisture": number, "purity": number, "flaggedContaminants": ["string"] }.` }
+            ]
+          }
+        ],
+        config: {
+          responseMimeType: 'application/json',
+        }
+      });
+
+      try {
+        const responseText = response.text || '';
+        const sanitizedText = responseText.replace(/```json|```/g, '').trim();
+        resultJson = JSON.parse(sanitizedText);
+      } catch (parseError) {
+        console.warn('JSON parsing of Gemini response failed, applying robust fallback/regex:', parseError);
+        const rawText = response.text || '';
+        
+        const categoryRegex = /"categoryName"\s*:\s*"([^"]+)"/i;
+        const confidenceRegex = /"confidence"\s*:\s*([0-9.]+)/;
+        const moistureRegex = /"moisture"\s*:\s*([0-9.]+)/;
+        const purityRegex = /"purity"\s*:\s*([0-9.]+)/;
+        
+        const catMatch = rawText.match(categoryRegex);
+        const confMatch = rawText.match(confidenceRegex);
+        const moistMatch = rawText.match(moistureRegex);
+        const purityMatch = rawText.match(purityRegex);
+
+        resultJson = {
+          categoryName: (catMatch && catMatch[1]) ? catMatch[1] : (categories[0]?.name || 'Coffee Pulp'),
+          confidence: (confMatch && confMatch[1]) ? parseFloat(confMatch[1]) : 0.85,
+          moisture: (moistMatch && moistMatch[1]) ? parseFloat(moistMatch[1]) : 45.0,
+          purity: (purityMatch && purityMatch[1]) ? parseFloat(purityMatch[1]) : 95.0,
+          flaggedContaminants: [],
+        };
+      }
     }
 
     let matchedCategory = categories.find(c => c.name.toLowerCase() === resultJson.categoryName?.toLowerCase());

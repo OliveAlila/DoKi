@@ -27,7 +27,8 @@ Template files are provided in each app's directory:
    ```
 2. **Fill in required secrets**:
    - `JWT_SECRET` (API): Required for the API to sign authentication tokens.
-   - `GEMINI_API_KEY` (API): Required for the API's AI image classification features.
+   - `SIMULATE_AI` (API): Set to `true` to bypass the Gemini API and use local mock classification data (useful for offline development).
+   - `GEMINI_API_KEY` (API): Required for the API's AI image classification features (unless `SIMULATE_AI=true`).
 
 **Note**: If these variables are missing, the applications will immediately crash on startup with a clear validation error.
 
