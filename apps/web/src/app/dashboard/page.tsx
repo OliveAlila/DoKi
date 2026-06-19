@@ -22,14 +22,13 @@ import {
 import {
   IconArrowLeft,
   IconDatabase,
-  IconLeaf,
   IconRecycle,
-  IconReload,
+  IconReload
 } from '@tabler/icons-react';
+import { useQuery } from '@tanstack/react-query';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useEffect, useState } from 'react';
 
 // Dynamically load the Map component to prevent window-undefined SSR errors in Next.js
 const MapComponent = dynamic(() => import('@/components/MapComponent'), {
@@ -154,7 +153,7 @@ type Buyer = {
 };
 
 export default function OperatorDashboard() {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
 
   // Component States
@@ -320,21 +319,13 @@ export default function OperatorDashboard() {
   };
 
   return (
-    <Box style={{ backgroundColor: '#0b0f19', minHeight: '100vh', color: '#f3f4f6' }} py={30}>
+    <Box style={{ backgroundColor: '#0b0f19', color: '#f3f4f6' }}>
       <Container size="xl">
-        {/* Dashboard Header */}
+        {/* Page Actions */}
         <Group justify="space-between" mb={30} align="center">
-          <Stack gap={4}>
-            <Group gap="xs">
-              <IconLeaf size={28} color="#22c55e" />
-              <Title order={1} style={{ fontSize: '28px', fontWeight: 800, color: '#f3f4f6' }}>
-                Doki <Text span inherit color="#22c55e">Climate Console</Text>
-              </Title>
-            </Group>
-            <Text size="sm" color="gray.5">
-              Real-time Landfill Avoidance & Carbon Abatement Ledger | Kenya Agricultural Hubs
-            </Text>
-          </Stack>
+          <Text size="sm" color="gray.5">
+            Real-time Landfill Avoidance & Carbon Abatement Ledger | Kenya Agricultural Hubs
+          </Text>
           <Group gap="md">
             <Button
               variant="subtle"
@@ -344,7 +335,7 @@ export default function OperatorDashboard() {
               loading={refreshing}
               style={{ color: '#9ca3af' }}
             >
-              Refresh
+              Refresh Data
             </Button>
             <Button
               variant="outline"
@@ -353,9 +344,6 @@ export default function OperatorDashboard() {
               onClick={() => router.push('/')}
             >
               Back to Home
-            </Button>
-            <Button variant="filled" color="red" onClick={() => signOut()}>
-              Sign Out
             </Button>
           </Group>
         </Group>
