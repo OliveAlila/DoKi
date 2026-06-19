@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { StyleSheet, View, TouchableOpacity, Modal, Animated, ActivityIndicator, SafeAreaView } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { Text } from '../components/ui/text';
-import { Button } from '../components/ui/button';
-import { AIResultCard } from '../components/ui/AIResultCard';
-import { getApiUrl } from '../utils/network';
+import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
+import { AIResultCard } from '@/components/ui/AIResultCard';
+import { getApiUrl } from '@/utils/network';
 
 export interface ClassificationResult {
   categoryId: number;

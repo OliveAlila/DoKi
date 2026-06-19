@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { PrismaClient, Role } from '@prisma/client';
 import { PrismaBunSqlite } from 'prisma-adapter-bun-sqlite';
-import { hashPassword } from '../src/utils/hash';
+import { hashPassword } from '@/utils/hash';
 
 // Seed script is run from apps/api directory usually
 const dbPath = path.resolve(__dirname, '../dev.db');
@@ -214,58 +214,55 @@ async function main() {
   // We want to calculate carbon avoidance values based on:
   // Methane Avoided = (qtyKg / 1000) * doc * 0.333
   // CO2e reduced = Methane Avoided * 28
-  const transactionsData = [
-    // Jan 2026
-    { seller: sellerA, buyer: buyerA, category: coffeePulp, quantity: 4500, date: new Date(2026, 0, 15) },
-    { seller: sellerC, buyer: buyerC, category: spentGrain, quantity: 6000, date: new Date(2026, 0, 28) },
-    // Feb 2026
-    { seller: sellerB, buyer: buyerB, category: fruitWaste, quantity: 5500, date: new Date(2026, 1, 10) },
-    { seller: sellerD, buyer: buyerA, category: maizeHusks, quantity: 3000, date: new Date(2026, 1, 24) },
-    // Mar 2026
-    { seller: sellerE, buyer: buyerB, category: animalManure, quantity: 8000, date: new Date(2026, 2, 5) },
-    { seller: sellerA, buyer: buyerC, category: coffeePulp, quantity: 5000, date: new Date(2026, 2, 19) },
-    // Apr 2026
-    { seller: sellerC, buyer: buyerA, category: spentGrain, quantity: 7500, date: new Date(2026, 3, 12) },
-    { seller: sellerB, buyer: buyerB, category: fruitWaste, quantity: 6200, date: new Date(2026, 3, 26) },
-    // May 2026
-    { seller: sellerD, buyer: buyerC, category: maizeHusks, quantity: 4200, date: new Date(2026, 4, 8) },
-    { seller: sellerE, buyer: buyerA, category: animalManure, quantity: 9500, date: new Date(2026, 4, 22) },
-    // Jun 2026
-    { seller: sellerA, buyer: buyerB, category: coffeePulp, quantity: 5200, date: new Date(2026, 5, 2) },
-    { seller: sellerC, buyer: buyerC, category: spentGrain, quantity: 8200, date: new Date(2026, 5, 14) },
-  ];
+  const sellersList = [sellerA, sellerB, sellerC, sellerD, sellerE];
+  const buyersList = [buyerA, buyerB, buyerC];
+  const categoriesList = [spentGrain, coffeePulp, fruitWaste, maizeHusks, animalManure];
 
-  for (const tx of transactionsData) {
-    const qtyTonnes = tx.quantity / 1000;
-    const methaneAvoided = qtyTonnes * tx.category.doc * 0.333;
+  const numTransactions = 75;
+  const startDate = new Date(2026, 0, 1).getTime();
+  const endDate = new Date(2026, 5, 30).getTime();
+
+  for (let i = 0; i < numTransactions; i++) {
+    const seller = sellersList[Math.floor(Math.random() * sellersList.length)]!;
+    const buyer = buyersList[Math.floor(Math.random() * buyersList.length)]!;
+    const category = categoriesList[Math.floor(Math.random() * categoriesList.length)]!;
+    
+    const quantity = Math.floor(Math.random() * 8000) + 1000; // 1000 to 9000 kg
+    const moisture = parseFloat((Math.random() * 60 + 20).toFixed(1)); // 20.0 to 80.0%
+    const purity = parseFloat((Math.random() * 15 + 85).toFixed(1)); // 85.0 to 100.0%
+    
+    const randomDate = new Date(startDate + Math.random() * (endDate - startDate));
+
+    const qtyTonnes = quantity / 1000;
+    const methaneAvoided = qtyTonnes * category.doc * 0.333;
     const co2eReduced = methaneAvoided * 28;
 
     const dbTx = await prisma.transaction.create({
       data: {
-        sellerId: tx.seller.id,
-        buyerId: tx.buyer.id,
-        categoryId: tx.category.id,
-        quantity: tx.quantity,
-        moisture: 45.0, // default avg
-        purity: 97.0, // default avg
+        sellerId: seller.id,
+        buyerId: buyer.id,
+        categoryId: category.id,
+        quantity,
+        moisture,
+        purity,
         methaneAvoided,
         co2eReduced,
-        createdAt: tx.date,
+        createdAt: randomDate,
       },
     });
 
     // Create matching audit logs
     await prisma.auditLog.create({
       data: {
-        timestamp: tx.date,
+        timestamp: randomDate,
         action: 'TRANSACTION_COMPLETED',
         operator: 'SYSTEM_ROUTER',
         details: JSON.stringify({
           transactionId: dbTx.id,
-          sellerName: tx.seller.name,
-          buyerName: tx.buyer.name,
-          categoryName: tx.category.name,
-          quantityKg: tx.quantity,
+          sellerName: seller.name,
+          buyerName: buyer.name,
+          categoryName: category.name,
+          quantityKg: quantity,
           methaneAvoidedTonnes: parseFloat(methaneAvoided.toFixed(3)),
           co2eReducedTonnes: parseFloat(co2eReduced.toFixed(3)),
         }),

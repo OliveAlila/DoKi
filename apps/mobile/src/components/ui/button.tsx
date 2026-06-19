@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Pressable } from 'react-native';
 import { cn } from '@/lib/utils';
-import { Text } from './text';
+import { Text } from '@/components/ui/text';
 
 // className is registered via nativewind-setup.ts (cssInterop called globally in App.tsx)
 export interface ButtonProps extends React.ComponentPropsWithoutRef<typeof Pressable> {

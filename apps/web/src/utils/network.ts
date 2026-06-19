@@ -1,4 +1,4 @@
-import { env } from '../env';
+import { env } from '@/env';
 
 export const getApiUrl = (): string => {
   if (env.NEXT_PUBLIC_API_URL) {

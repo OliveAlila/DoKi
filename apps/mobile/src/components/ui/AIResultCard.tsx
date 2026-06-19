@@ -1,9 +1,9 @@
 import * as React from 'react';
 import { View } from 'react-native';
-import { Card } from './card';
-import { Text } from './text';
-import { Button } from './button';
-import { Progress } from './progress';
+import { Card } from '@/components/ui/card';
+import { Text } from '@/components/ui/text';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 
 export interface AIResultCardProps {
   category: string;
