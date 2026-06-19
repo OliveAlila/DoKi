@@ -72,10 +72,10 @@ export default function MarketplaceFeedPage() {
 
   const allListings: ListingWithCategory[] = useMemo(() => {
     if (!data?.sellers) return [];
-    return data.sellers.flatMap((seller: { name: string; address: string; latitude: number; longitude: number; listings: any[] }) => 
+    return data.sellers.flatMap((seller: { name: string; address: string; latitude: number; longitude: number; listings: Omit<ListingWithCategory, 'seller'>[] }) => 
       seller.listings
         .filter((l: { status: string }) => l.status === "PENDING")
-        .map((l: any) => ({ ...l, seller: { name: seller.name, address: seller.address, latitude: seller.latitude, longitude: seller.longitude } }))
+        .map((l: Omit<ListingWithCategory, 'seller'>) => ({ ...l, seller: { name: seller.name, address: seller.address, latitude: seller.latitude, longitude: seller.longitude } }))
     );
   }, [data]);
 
