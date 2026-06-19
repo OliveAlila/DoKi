@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
-import prisma from '../db';
+import prisma from '@/db';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecret';

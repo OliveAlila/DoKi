@@ -1,10 +1,13 @@
+'use client';
+
 import { Anchor, Button, Container, Group, Paper, PasswordInput, Text, TextInput, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useMutation } from '@tanstack/react-query';
 import { zodResolver } from 'mantine-form-zod-resolver';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { z } from 'zod';
-import { useAuth } from './context/AuthContext';
+import { useAuth } from '@/context/AuthContext';
 
 const authSchema = z.object({
   name: z.string().optional(),
@@ -12,8 +15,15 @@ const authSchema = z.object({
   password: z.string().min(6, { message: 'Password should include at least 6 characters' }),
 });
 
-function AuthPage({ type }: { type: 'sign-in' | 'sign-up' }) {
-  const { signIn } = useAuth();
+export function AuthForm({ type }: { type: 'sign-in' | 'sign-up' }) {
+  const { signIn, user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/');
+    }
+  }, [user, loading, router]);
 
   const form = useForm({
     initialValues: {
@@ -45,6 +55,8 @@ function AuthPage({ type }: { type: 'sign-in' | 'sign-up' }) {
     },
   });
 
+  if (loading || user) return null;
+
   return (
     <Container size={420} my={40}>
       <Title ta="center">{type === 'sign-in' ? 'Welcome back!' : 'Create an account'}</Title>
@@ -62,7 +74,7 @@ function AuthPage({ type }: { type: 'sign-in' | 'sign-up' }) {
         <Group justify="space-between" mt="lg">
           <Text c="dimmed" size="sm" ta="center" mt={5}>
             {type === 'sign-in' ? 'Do not have an account yet?' : 'Already have an account?'}
-            <Anchor size="sm" component="button" ml={5} onClick={() => window.location.href = type === 'sign-in' ? '/sign-up' : '/sign-in'}>
+            <Anchor size="sm" component="button" ml={5} onClick={() => router.push(type === 'sign-in' ? '/sign-up' : '/sign-in')}>
               {type === 'sign-in' ? 'Create account' : 'Sign in'}
             </Anchor>
           </Text>
@@ -71,33 +83,3 @@ function AuthPage({ type }: { type: 'sign-in' | 'sign-up' }) {
     </Container>
   );
 }
-
-function Dashboard() {
-  const { user, signOut } = useAuth();
-  return (
-    <Container my={40}>
-      <Title>Dashboard</Title>
-      <Text mt="md">Welcome, {user?.name || user?.email}!</Text>
-      <Button mt="md" onClick={() => signOut()}>Sign out</Button>
-    </Container>
-  );
-}
-
-function App() {
-  const { user, loading } = useAuth();
-
-  if (loading) return <div>Loading...</div>;
-
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/sign-in" element={user ? <Navigate to="/" /> : <AuthPage type="sign-in" />} />
-        <Route path="/sign-up" element={user ? <Navigate to="/" /> : <AuthPage type="sign-up" />} />
-        <Route path="/" element={user ? <Dashboard /> : <Navigate to="/sign-in" />} />
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </BrowserRouter>
-  );
-}
-
-export default App;

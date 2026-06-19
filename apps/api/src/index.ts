@@ -1,7 +1,7 @@
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
-import authRoutes from './routes/auth.ts';
+import authRoutes from '@/routes/auth.ts';
 
 const app = express();
 const port = process.env.PORT || 3001;
