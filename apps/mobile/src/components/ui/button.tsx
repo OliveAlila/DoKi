@@ -32,7 +32,7 @@ export const Button = React.forwardRef<
 
   const sizeClasses = {
     default: 'h-12 px-6 rounded-lg justify-center items-center',
-    sm: 'h-10 px-4 rounded-md justify-center items-center',
+    sm: 'h-12 px-4 rounded-md justify-center items-center',
     lg: 'h-14 px-8 rounded-xl justify-center items-center',
     icon: 'h-12 w-12 rounded-lg justify-center items-center',
   };

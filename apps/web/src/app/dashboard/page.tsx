@@ -9,10 +9,12 @@ import {
   Card,
   Collapse,
   Container,
+  CopyButton,
   Grid,
   Group,
   Loader,
   ScrollArea,
+  Skeleton,
   Stack,
   Table,
   Text,
@@ -21,6 +23,8 @@ import {
 } from '@mantine/core';
 import {
   IconArrowLeft,
+  IconCheck,
+  IconCopy,
   IconDatabase,
   IconRecycle,
   IconReload
@@ -33,25 +37,7 @@ import React, { useEffect, useState } from 'react';
 // Dynamically load the Map component to prevent window-undefined SSR errors in Next.js
 const MapComponent = dynamic(() => import('@/components/MapComponent'), {
   ssr: false,
-  loading: () => (
-    <Box
-      h={400}
-      w="100%"
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#111827',
-        color: '#9ca3af',
-        borderRadius: '12px',
-      }}
-    >
-      <Stack align="center" gap="sm">
-        <Loader color="green" size="md" />
-        <Text size="sm">Loading Geo-Spatial Proximity Map...</Text>
-      </Stack>
-    </Box>
-  ),
+  loading: () => <Skeleton height={400} radius="lg" />,
 });
 
 // Dynamically load Recharts components to prevent SSR hydration mismatches
@@ -84,7 +70,10 @@ const SparklineChart = dynamic(
         );
       };
     }),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => <Skeleton height={50} mt="sm" radius="md" />,
+  }
 );
 
 type Scorecard = {
@@ -318,13 +307,43 @@ export default function OperatorDashboard() {
     }
   };
 
+  const syntaxHighlightJson = (jsonStr: string) => {
+    if (!jsonStr) return '';
+    try {
+      const formatted = jsonStr
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      
+      return formatted.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g, (match) => {
+        let cls = 'color: #93c5fd;'; // default key
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'color: #38bdf8; font-weight: bold;'; // key
+          } else {
+            cls = 'color: #a7f3d0;'; // string
+          }
+        } else if (/true|false/.test(match)) {
+          cls = 'color: #fca5a5;'; // boolean
+        } else if (/null/.test(match)) {
+          cls = 'color: #d1d5db;'; // null
+        } else {
+          cls = 'color: #fde047;'; // number
+        }
+        return `<span style="${cls}">${match}</span>`;
+      });
+    } catch {
+      return jsonStr;
+    }
+  };
+
   return (
     <Box style={{ backgroundColor: '#0b0f19', color: '#f3f4f6' }}>
       <Container size="xl">
         {/* Page Actions */}
         <Group justify="space-between" mb={30} align="center">
           <Text size="sm" color="gray.5">
-            Real-time Landfill Avoidance & Carbon Abatement Ledger | Kenya Agricultural Hubs
+            Real-time Landfill Avoidance & Greenhouse Gas Abatement Ledger | Kenya Circular Feedstock Hubs
           </Text>
           <Group gap="md">
             <Button
@@ -361,7 +380,7 @@ export default function OperatorDashboard() {
               }}
             >
               <Text size="xs" color="gray.5" fw={700} style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>
-                Total Waste Diverted
+                Total Feedstock Diverted
               </Text>
               <Group justify="space-between" align="baseline" mt="sm">
                 <Text style={{ fontSize: '32px', fontWeight: 800, color: '#f3f4f6' }}>
@@ -384,7 +403,7 @@ export default function OperatorDashboard() {
               }}
             >
               <Text size="xs" color="gray.5" fw={700} style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>
-                Methane Avoided (CH4)
+                Audited Greenhouse Gas Abatement Ledger (IPCC Tier 1)
               </Text>
               <Group justify="space-between" align="baseline" mt="sm">
                 <Text style={{ fontSize: '32px', fontWeight: 800, color: '#f3f4f6' }}>
@@ -437,7 +456,7 @@ export default function OperatorDashboard() {
                 Kenyan Geo-Spatial Proximity Map
               </Title>
               <Text size="xs" color="gray.5" mb="md">
-                Active Listings Map in Thika, Kiambu, and Nairobi. Green pins are Waste Sellers. Blue pins are Offtakers.
+                Active Listings Map in Thika, Kiambu, and Nairobi. Green markers represent Organic Waste Generators. Blue markers represent Industrial Circular Consumers.
               </Text>
               <MapComponent pins={mapPins} />
             </Card>
@@ -500,24 +519,43 @@ export default function OperatorDashboard() {
                             <Table.Td colSpan={3} p={0}>
                               <Collapse expanded={isExpanded}>
                                 <Box p="md" style={{ backgroundColor: '#0b0f19', borderBottom: '1px solid #1f2937' }}>
-                                  <Group mb="xs">
-                                    <IconDatabase size={14} color="#10b981" />
-                                    <Text size="xs" fw={700} color="green.4">Forensic JSON Metadata</Text>
+                                  <Group justify="space-between" mb="xs">
+                                    <Group gap="xs">
+                                      <IconDatabase size={14} color="#22c55e" />
+                                      <Text size="xs" fw={700} color="green.4">Forensic JSON Metadata</Text>
+                                    </Group>
+                                    <CopyButton value={renderSafeJson(log.details)}>
+                                      {({ copied, copy }) => (
+                                        <Button
+                                          size="xs"
+                                          variant="subtle"
+                                          color={copied ? "teal" : "gray"}
+                                          leftSection={copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                                          onClick={copy}
+                                        >
+                                          {copied ? "Copied" : "Copy Cryptographic Hash / Metadata Record"}
+                                        </Button>
+                                      )}
+                                    </CopyButton>
                                   </Group>
-                                  <pre
+                                  <Box
                                     style={{
                                       margin: 0,
                                       fontSize: '11px',
-                                      color: '#a7f3d0',
                                       overflowX: 'auto',
                                       fontFamily: 'monospace',
-                                      padding: '8px',
-                                      backgroundColor: '#1f2937/40',
-                                      borderRadius: '6px',
+                                      padding: '10px',
+                                      backgroundColor: '#111827',
+                                      border: '1px solid #1f2937',
+                                      borderRadius: '8px',
+                                      lineHeight: 1.5,
                                     }}
                                   >
-                                    {renderSafeJson(log.details)}
-                                  </pre>
+                                    <pre
+                                      style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}
+                                      dangerouslySetInnerHTML={{ __html: syntaxHighlightJson(renderSafeJson(log.details)) }}
+                                    />
+                                  </Box>
                                 </Box>
                               </Collapse>
                             </Table.Td>

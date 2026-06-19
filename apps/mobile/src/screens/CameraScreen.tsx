@@ -13,6 +13,7 @@ export interface ClassificationResult {
   moisture: number;
   purity: number;
   flaggedContaminants: string[];
+  is_manually_corrected?: boolean;
 }
 
 export const OFFLINE_FALLBACK_RESULT: ClassificationResult = {
@@ -88,7 +89,7 @@ export default function CameraScreen() {
             Camera Permission Required
           </Text>
           <Text variant="muted" className="text-center text-zinc-400 mb-6 leading-relaxed">
-            We need access to your device camera to scan and automatically classify agricultural waste categories for listing.
+            We need access to your device camera to scan and automatically classify agricultural feedstock categories for listing.
           </Text>
           <Button
             variant="default"
@@ -171,6 +172,7 @@ export default function CameraScreen() {
           quantity: 2500, // Default 2.5 tonnes demo volume
           moisture: classificationResult.moisture,
           purity: classificationResult.purity,
+          is_manually_corrected: classificationResult.is_manually_corrected || false,
         }),
       });
 
@@ -179,12 +181,12 @@ export default function CameraScreen() {
       }
 
       // Success transition
-      alert('Success: Listing published to Doki marketplace.');
+      alert('Success: Feedstock Material Asset published to Doki marketplace.');
       setShowModal(false);
       setClassificationResult(null);
     } catch (err) {
       console.error(err);
-      alert('Offline Error: Listing queued locally for synchronization.');
+      alert('Offline Error: Feedstock Material Asset queued locally for synchronization.');
       setShowModal(false);
       setClassificationResult(null);
     } finally {
@@ -206,7 +208,7 @@ export default function CameraScreen() {
         <SafeAreaView className="flex-row justify-between items-center px-6 mt-4">
           <View className="bg-black/50 px-4 py-2 rounded-full border border-white/10">
             <Text className="text-white font-semibold text-xs uppercase tracking-wider">
-              Doki AI Scanner
+              Doki Visual Verification Stream Scanner
             </Text>
           </View>
           {errorMessage && (
@@ -222,7 +224,7 @@ export default function CameraScreen() {
         <View className="flex-1 justify-center items-center">
           <View className="w-64 h-64 border-2 border-white/40 border-dashed rounded-3xl justify-center items-center">
             <Text className="text-white/60 text-xs font-semibold text-center px-4 bg-black/40 py-1.5 rounded-full">
-              Align Organic Waste inside frame
+              Align Feedstock Material Asset inside frame
             </Text>
           </View>
         </View>
@@ -250,8 +252,8 @@ export default function CameraScreen() {
               <Text className="text-4xl">🌱</Text>
             </View>
           </Animated.View>
-          <Text className="text-white font-bold mt-6 text-lg">Analyzing waste pulp...</Text>
-          <Text className="text-zinc-400 text-xs mt-1">Extracting moisture & purity metrics</Text>
+          <Text className="text-white font-bold mt-6 text-lg">Initializing Visual Composition Analysis...</Text>
+          <Text className="text-zinc-400 text-xs mt-1">Extracting RMC and CPI Metadata Metrics...</Text>
         </View>
       )}
 

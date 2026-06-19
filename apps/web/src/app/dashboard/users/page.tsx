@@ -73,10 +73,10 @@ export default function UserRegistryPage() {
           <Tabs defaultValue="sellers" color="green" variant="outline">
             <Tabs.List style={{ backgroundColor: '#1f2937', borderBottom: '1px solid #374151' }}>
               <Tabs.Tab value="sellers" leftSection={<IconUserExclamation size={16} />} style={{ color: '#f3f4f6', fontWeight: 600 }}>
-                Sellers (Waste Generators)
+                Producers (Organic Waste Generators)
               </Tabs.Tab>
               <Tabs.Tab value="buyers" leftSection={<IconBuildingFactory size={16} />} style={{ color: '#f3f4f6', fontWeight: 600 }}>
-                Buyers (Industrial Offtakers)
+                Offtakers (Industrial Circular Consumers)
               </Tabs.Tab>
             </Tabs.List>
 

@@ -70,7 +70,7 @@ export default function MarketplaceModerationPage() {
             <Table.Thead style={{ borderBottom: "1.5px solid #1f2937" }}>
               <Table.Tr>
                 <Table.Th style={{ color: "#9ca3af" }}>Listing ID</Table.Th>
-                <Table.Th style={{ color: "#9ca3af" }}>Seller</Table.Th>
+                <Table.Th style={{ color: "#9ca3af" }}>Producer (Organic Waste Generator)</Table.Th>
                 <Table.Th style={{ color: "#9ca3af" }}>Category</Table.Th>
                 <Table.Th style={{ color: "#9ca3af" }}>Metrics</Table.Th>
                 <Table.Th style={{ color: "#9ca3af" }}>AI Flag</Table.Th>
@@ -93,12 +93,12 @@ export default function MarketplaceModerationPage() {
                     </Table.Td>
                     <Table.Td>
                       <Group gap="xs" mb={4}>
-                        <Text size="xs" w={50}>Purity:</Text>
+                        <Text size="xs" w={50}>CPI:</Text>
                         <Progress value={l.purity} color={l.purity < 75 ? "red" : "green"} size="sm" w={60} />
                         <Text size="xs" fw={700} color={l.purity < 75 ? "red.4" : "green.4"}>{l.purity}%</Text>
                       </Group>
                       <Group gap="xs">
-                        <Text size="xs" w={50}>Moisture:</Text>
+                        <Text size="xs" w={50}>RMC:</Text>
                         <Progress value={l.moisture} color="blue" size="sm" w={60} />
                         <Text size="xs" fw={700} color="blue.4">{l.moisture}%</Text>
                       </Group>

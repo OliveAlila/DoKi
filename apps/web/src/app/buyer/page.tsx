@@ -3,7 +3,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { getApiUrl } from "@/utils/network";
 import { useQuery } from "@tanstack/react-query";
-import { Box, Card, Container, Grid, Group, Stack, Text, Title, Badge, Loader, Slider, Select, Button, ScrollArea } from "@mantine/core";
+import { Box, Card, Container, Grid, Group, Stack, Text, Title, Badge, Loader, Slider, Select, Button, ScrollArea, Skeleton } from "@mantine/core";
 import { IconMapSearch, IconLeaf, IconFilter, IconListDetails } from "@tabler/icons-react";
 import React, { useState, useMemo } from "react";
 import dynamic from 'next/dynamic';
@@ -12,14 +12,7 @@ import Link from 'next/link';
 // Dynamically load the Map component
 const MapComponent = dynamic(() => import('@/components/MapComponent'), {
   ssr: false,
-  loading: () => (
-    <Box h={500} w="100%" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#1e293b', borderRadius: '12px' }}>
-      <Stack align="center" gap="sm">
-        <Loader color="teal" size="md" />
-        <Text size="sm" color="slate.4">Loading Geo-Spatial Map...</Text>
-      </Stack>
-    </Box>
-  ),
+  loading: () => <Skeleton height={500} radius="lg" w="100%" />,
 });
 
 type ListingWithCategory = {
@@ -166,7 +159,7 @@ export default function MarketplaceFeedPage() {
               
               <Stack gap="md">
                 <Select
-                  label={<Text size="xs" color="slate.4">Waste Category</Text>}
+                  label={<Text size="xs" color="slate.4">Feedstock Category</Text>}
                   placeholder="All Categories"
                   data={uniqueCategories}
                   value={filterCategory}
@@ -176,7 +169,7 @@ export default function MarketplaceFeedPage() {
                 
                 <Box>
                   <Group justify="space-between" mb={4}>
-                    <Text size="xs" color="slate.4">Minimum Purity %</Text>
+                    <Text size="xs" color="slate.4">Minimum CPI %</Text>
                     <Text size="xs" fw={700} color="teal.4">{minPurity}%</Text>
                   </Group>
                   <Slider value={minPurity} onChange={setMinPurity} min={0} max={100} color="teal" />
@@ -184,7 +177,7 @@ export default function MarketplaceFeedPage() {
 
                 <Box>
                   <Group justify="space-between" mb={4}>
-                    <Text size="xs" color="slate.4">Maximum Moisture %</Text>
+                    <Text size="xs" color="slate.4">Maximum RMC %</Text>
                     <Text size="xs" fw={700} color="blue.4">{maxMoisture}%</Text>
                   </Group>
                   <Slider value={maxMoisture} onChange={setMaxMoisture} min={0} max={100} color="blue" />
@@ -227,11 +220,11 @@ export default function MarketplaceFeedPage() {
                         
                         <Group gap="xl" mb="md">
                           <Box>
-                            <Text size="xs" color="slate.5">Purity</Text>
+                            <Text size="xs" color="slate.5">CPI</Text>
                             <Text size="sm" fw={600} color={l.purity < 75 ? "red.4" : "teal.4"}>{l.purity}%</Text>
                           </Box>
                           <Box>
-                            <Text size="xs" color="slate.5">Moisture</Text>
+                            <Text size="xs" color="slate.5">RMC</Text>
                             <Text size="sm" fw={600} color="blue.4">{l.moisture}%</Text>
                           </Box>
                           {distText && (
@@ -267,7 +260,7 @@ export default function MarketplaceFeedPage() {
                 Regional Proximity Map
               </Title>
               <Text size="xs" color="slate.4" mb="md">
-                Interactive view of feedstock generating facilities.
+                Interactive view of organic waste generating facilities (Producers).
               </Text>
               <Box style={{ height: "calc(100% - 60px)", minHeight: 500 }}>
                 <MapComponent pins={mapPins} />

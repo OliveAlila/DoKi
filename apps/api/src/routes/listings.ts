@@ -3,6 +3,7 @@ import { Router } from 'express';
 import prisma from '@/db';
 import type { AuthRequest } from '@/middleware/auth';
 import { authenticateJWT } from '@/middleware/auth';
+import { z } from 'zod';
 
 import { env } from '@/env';
 
@@ -17,14 +18,59 @@ interface ClassificationResult {
   moisture?: number;
   purity?: number;
   flaggedContaminants?: string[];
+  is_manually_corrected?: boolean;
 }
+
+// Zod validation schemas
+const classifySchema = z.object({
+  image: z.string().min(1, "Visual verification stream (image payload) is required"),
+});
+
+const publishListingSchema = z.object({
+  categoryId: z.union([z.number(), z.string()]).transform((val) => {
+    const parsed = Number(val);
+    if (isNaN(parsed)) throw new Error("Category ID must be a valid number reference");
+    return parsed;
+  }).refine((val) => val > 0, "Category ID must be a positive integer"),
+  quantity: z.union([z.number(), z.string()]).transform((val) => {
+    const parsed = Number(val);
+    if (isNaN(parsed)) throw new Error("Feedstock volume quantity must be a valid number");
+    return parsed;
+  }).refine((val) => val > 0, "Feedstock volume quantity must be positive and greater than zero (no negative weights)"),
+  moisture: z.union([z.number(), z.string()]).transform((val) => {
+    const parsed = Number(val);
+    if (isNaN(parsed)) throw new Error("Relative Moisture Coefficient must be a valid number");
+    return parsed;
+  }).refine((val) => val >= 0 && val <= 100, "Relative Moisture Coefficient (RMC) must be between 0 and 100 percent"),
+  purity: z.union([z.number(), z.string()]).transform((val) => {
+    const parsed = Number(val);
+    if (isNaN(parsed)) throw new Error("Verified Composition Purity Index must be a valid number");
+    return parsed;
+  }).refine((val) => val >= 0 && val <= 100, "Verified Composition Purity Index (CPI) must be between 0 and 100 percent"),
+  is_manually_corrected: z.boolean().optional(),
+});
+
+const expressInterestSchema = z.object({
+  listingId: z.union([z.number(), z.string()]).transform((val) => {
+    const parsed = Number(val);
+    if (isNaN(parsed)) throw new Error("Listing ID must be a valid number reference");
+    return parsed;
+  }).refine((val) => val > 0, "Listing ID must be a positive integer"),
+});
 
 // 1. Camera Classification Flow (POST /api/v1/listings/classify)
 router.post('/listings/classify', authenticateJWT, async (req: AuthRequest, res) => {
-  const { image } = req.body;
-  if (!image) {
-    return res.status(400).json({ error: 'Image payload is required' });
+  const result = classifySchema.safeParse(req.body);
+  if (!result.success) {
+    const errors: Record<string, string> = {};
+    result.error.issues.forEach((issue) => {
+      const field = issue.path.join('.') || 'general';
+      errors[field] = issue.message;
+    });
+    return res.status(400).json({ error: 'Validation failed', fields: errors });
   }
+
+  const { image } = result.data;
 
   try {
     const categories = await prisma.category.findMany();
@@ -35,16 +81,28 @@ router.post('/listings/classify', authenticateJWT, async (req: AuthRequest, res)
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
     
     let resultJson: ClassificationResult;
+    let isManuallyCorrected = false;
 
     if (env.SIMULATE_AI) {
-      // Phase 2: Mock Engine
-      await new Promise(res => setTimeout(res, 800)); // Simulate network payload round-trip
+      // Simulate network payload round-trip
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      const dataLen = base64Data.length;
+      const categoryIndex = dataLen % categories.length;
+      const matchedCategory = categories[categoryIndex] || categories[0];
+      
+      const confidence = parseFloat((0.80 + ((dataLen % 20) / 100)).toFixed(2));
+      const moisture = parseFloat((15.0 + (dataLen % 45)).toFixed(1));
+      const purity = parseFloat((70.0 + (dataLen % 30)).toFixed(1));
+      const flaggedContaminants = dataLen % 7 === 0 ? ['plastic_contamination'] : [];
+      
       resultJson = {
-        categoryName: categories[0]?.name || 'Coffee Pulp',
-        confidence: 0.94,
-        moisture: 45.5,
-        purity: 98.2,
-        flaggedContaminants: []
+        categoryName: matchedCategory?.name || 'Coffee Pulp',
+        confidence,
+        moisture,
+        purity,
+        flaggedContaminants,
+        is_manually_corrected: false
       };
     } else {
       if (!ai) {
@@ -74,24 +132,63 @@ router.post('/listings/classify', authenticateJWT, async (req: AuthRequest, res)
         resultJson = JSON.parse(sanitizedText);
       } catch (parseError) {
         console.warn('JSON parsing of Gemini response failed, applying robust fallback/regex:', parseError);
+        isManuallyCorrected = true;
         const rawText = response.text || '';
         
         const categoryRegex = /"categoryName"\s*:\s*"([^"]+)"/i;
         const confidenceRegex = /"confidence"\s*:\s*([0-9.]+)/;
         const moistureRegex = /"moisture"\s*:\s*([0-9.]+)/;
         const purityRegex = /"purity"\s*:\s*([0-9.]+)/;
+        const contaminantsRegex = /"flaggedContaminants"\s*:\s*\[([^\]]*)\]/i;
         
         const catMatch = rawText.match(categoryRegex);
         const confMatch = rawText.match(confidenceRegex);
         const moistMatch = rawText.match(moistureRegex);
         const purityMatch = rawText.match(purityRegex);
+        const contMatch = rawText.match(contaminantsRegex);
+        
+        let flaggedContaminants: string[] = [];
+        if (contMatch && contMatch[1]) {
+          flaggedContaminants = contMatch[1]
+            .split(',')
+            .map(s => s.replace(/"/g, '').trim())
+            .filter(Boolean);
+        }
+
+        let parsedConfidence = (confMatch && confMatch[1]) ? parseFloat(confMatch[1]) : 0.85;
+        if (isNaN(parsedConfidence) || parsedConfidence < 0 || parsedConfidence > 1) {
+          parsedConfidence = 0.85;
+        }
+
+        let parsedMoisture = (moistMatch && moistMatch[1]) ? parseFloat(moistMatch[1]) : 45.0;
+        if (isNaN(parsedMoisture) || parsedMoisture < 0 || parsedMoisture > 100) {
+          parsedMoisture = 45.0;
+        }
+
+        let parsedPurity = (purityMatch && purityMatch[1]) ? parseFloat(purityMatch[1]) : 95.0;
+        if (isNaN(parsedPurity) || parsedPurity < 0 || parsedPurity > 100) {
+          parsedPurity = 95.0;
+        }
+
+        let matchedCatName = 'Coffee Pulp';
+        if (catMatch && catMatch[1]) {
+          const matchedText = catMatch[1].trim();
+          const matchesAnyDb = categories.find(c => c.name.toLowerCase() === matchedText.toLowerCase());
+          if (matchesAnyDb) {
+            matchedCatName = matchesAnyDb.name;
+          } else {
+            matchedCatName = categories[0]?.name || 'Coffee Pulp';
+          }
+        } else {
+          matchedCatName = categories[0]?.name || 'Coffee Pulp';
+        }
 
         resultJson = {
-          categoryName: (catMatch && catMatch[1]) ? catMatch[1] : (categories[0]?.name || 'Coffee Pulp'),
-          confidence: (confMatch && confMatch[1]) ? parseFloat(confMatch[1]) : 0.85,
-          moisture: (moistMatch && moistMatch[1]) ? parseFloat(moistMatch[1]) : 45.0,
-          purity: (purityMatch && purityMatch[1]) ? parseFloat(purityMatch[1]) : 95.0,
-          flaggedContaminants: [],
+          categoryName: matchedCatName,
+          confidence: parsedConfidence,
+          moisture: parsedMoisture,
+          purity: parsedPurity,
+          flaggedContaminants,
         };
       }
     }
@@ -111,6 +208,7 @@ router.post('/listings/classify', authenticateJWT, async (req: AuthRequest, res)
       moisture: resultJson.moisture ?? 40.0,
       purity: resultJson.purity ?? 95.0,
       flaggedContaminants: resultJson.flaggedContaminants || [],
+      is_manually_corrected: isManuallyCorrected || resultJson.is_manually_corrected || false,
     });
   } catch (error) {
     console.error('Classification error:', error);
@@ -120,21 +218,31 @@ router.post('/listings/classify', authenticateJWT, async (req: AuthRequest, res)
 
 // 2. Publish a listing (POST /api/v1/listings)
 router.post('/listings', authenticateJWT, async (req: AuthRequest, res) => {
-  const { categoryId, quantity, moisture, purity } = req.body;
-  const sellerId = req.user?.userId;
   const role = req.user?.role;
-
   if (role !== 'SELLER') {
     return res.status(403).json({ error: 'Only sellers can publish listings' });
   }
 
-  if (!sellerId || !categoryId || !quantity) {
-    return res.status(400).json({ error: 'Missing required parameters' });
+  const sellerId = req.user?.userId;
+  if (!sellerId) {
+    return res.status(401).json({ error: 'Unauthorized: Missing operator profile' });
   }
+
+  const result = publishListingSchema.safeParse(req.body);
+  if (!result.success) {
+    const errors: Record<string, string> = {};
+    result.error.issues.forEach((issue) => {
+      const field = issue.path.join('.') || 'general';
+      errors[field] = issue.message;
+    });
+    return res.status(400).json({ error: 'Validation failed', fields: errors });
+  }
+
+  const { categoryId, quantity, moisture, purity, is_manually_corrected } = result.data;
 
   try {
     const seller = await prisma.user.findUnique({ where: { id: sellerId } });
-    const category = await prisma.category.findUnique({ where: { id: parseInt(categoryId, 10) } });
+    const category = await prisma.category.findUnique({ where: { id: categoryId } });
 
     if (!seller || !category) {
       return res.status(404).json({ error: 'Seller or Category not found' });
@@ -143,10 +251,10 @@ router.post('/listings', authenticateJWT, async (req: AuthRequest, res) => {
     const listing = await prisma.listing.create({
       data: {
         sellerId: sellerId,
-        categoryId: parseInt(categoryId, 10),
-        quantity: parseFloat(quantity),
-        moisture: parseFloat(moisture || 40.0),
-        purity: parseFloat(purity || 95.0),
+        categoryId: categoryId,
+        quantity: quantity,
+        moisture: moisture,
+        purity: purity,
         status: 'PENDING',
       },
     });
@@ -162,6 +270,7 @@ router.post('/listings', authenticateJWT, async (req: AuthRequest, res) => {
           quantityKg: quantity,
           moisturePercent: moisture,
           purityPercent: purity,
+          is_manually_corrected: is_manually_corrected || false,
         }),
       },
     });
@@ -313,21 +422,31 @@ router.get('/listings/:id', async (req, res) => {
 
 // 7. Express Sourcing Interest (POST /api/v1/transactions/interest)
 router.post('/transactions/interest', authenticateJWT, async (req: AuthRequest, res) => {
-  const { listingId } = req.body;
-  const buyerId = req.user?.userId;
   const role = req.user?.role;
-
   if (role !== 'BUYER') {
     return res.status(403).json({ error: 'Only buyers can express interest' });
   }
 
-  if (!listingId || !buyerId) {
-    return res.status(400).json({ error: 'Missing required parameters' });
+  const buyerId = req.user?.userId;
+  if (!buyerId) {
+    return res.status(401).json({ error: 'Unauthorized: Missing operator profile' });
   }
+
+  const result = expressInterestSchema.safeParse(req.body);
+  if (!result.success) {
+    const errors: Record<string, string> = {};
+    result.error.issues.forEach((issue) => {
+      const field = issue.path.join('.') || 'general';
+      errors[field] = issue.message;
+    });
+    return res.status(400).json({ error: 'Validation failed', fields: errors });
+  }
+
+  const { listingId } = result.data;
 
   try {
     const listing = await prisma.listing.findUnique({
-      where: { id: parseInt(listingId, 10) },
+      where: { id: listingId },
       include: { category: true },
     });
 

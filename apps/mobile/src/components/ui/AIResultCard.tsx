@@ -34,9 +34,9 @@ export const AIResultCard: React.FC<AIResultCardProps> = ({
         {/* Header */}
         <View className="border-b border-border pb-3">
           <Text variant="h3" className="text-primary font-bold text-xl">
-            AI Classification Result
+            Visual Verification Stream Audit
           </Text>
-          <Text variant="muted">Scanning completed successfully</Text>
+          <Text variant="muted">Deterministic Classification Successful</Text>
         </View>
 
         {/* Category & Confidence */}
@@ -58,19 +58,21 @@ export const AIResultCard: React.FC<AIResultCardProps> = ({
         <View className="flex flex-row justify-between gap-4 py-2 mt-2">
           <View className="flex-1 bg-muted/40 p-3 rounded-lg border border-border">
             <Text variant="muted" className="text-xs uppercase tracking-wider font-semibold text-zinc-400">
-              Moisture Content
+              Relative Moisture Coefficient (RMC)
             </Text>
-            <Text className="text-xl font-bold text-accent mt-1">
+            <Text className="text-xl font-bold text-accent mt-1 mb-2">
               {moisture.toFixed(1)}%
             </Text>
+            <Progress value={moisture} />
           </View>
           <View className="flex-1 bg-muted/40 p-3 rounded-lg border border-border">
             <Text variant="muted" className="text-xs uppercase tracking-wider font-semibold text-zinc-400">
-              Purity Score
+              Verified Composition Purity Index (CPI)
             </Text>
-            <Text className="text-xl font-bold text-accent mt-1">
+            <Text className="text-xl font-bold text-accent mt-1 mb-2">
               {purity.toFixed(1)}%
             </Text>
+            <Progress value={purity} />
           </View>
         </View>
 
@@ -82,19 +84,19 @@ export const AIResultCard: React.FC<AIResultCardProps> = ({
           {flaggedContaminants.length > 0 ? (
             <View className="bg-warning/20 border border-warning/30 p-3 rounded-lg">
               <Text className="text-warning font-semibold text-sm mb-1">
-                ⚠️ Warning: Contaminants Detected
+                Compliance Warning: Contamination Threshold Exceeded. Industrial grading may be affected.
               </Text>
-              <Text variant="small" className="text-muted-foreground text-xs">
-                {flaggedContaminants.join(', ')}
+              <Text variant="small" className="text-muted-foreground text-xs mt-1">
+                Detected: {flaggedContaminants.join(', ')}
               </Text>
             </View>
           ) : (
             <View className="bg-primary/10 border border-primary/20 p-3 rounded-lg">
               <Text className="text-primary font-semibold text-sm">
-                ✅ Pure Organic Waste
+                Compliance Success: Verified Pure Feedstock
               </Text>
               <Text variant="small" className="text-muted-foreground text-xs mt-0.5">
-                No foreign objects or contaminants detected.
+                Zero contamination elements detected.
               </Text>
             </View>
           )}

@@ -47,7 +47,7 @@ export default function ListingDetailsPage() {
       return res.json();
     },
     onSuccess: () => {
-      setSuccessMsg("Sourcing interest successfully locked. The seller has been notified.");
+      setSuccessMsg("Sourcing interest successfully locked. The organic waste generator has been notified.");
     },
   });
 
@@ -56,7 +56,7 @@ export default function ListingDetailsPage() {
       <Container fluid style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Stack align="center" gap="md">
           <Loader color="teal" size="lg" type="dots" />
-          <Text color="slate.4" size="sm">Retrieving Asset Stream Parameters...</Text>
+          <Text color="slate.4" size="sm">Retrieving Feedstock Material Asset Stream Parameters...</Text>
         </Stack>
       </Container>
     );
@@ -101,7 +101,7 @@ export default function ListingDetailsPage() {
 
         {isWarning && (
           <Alert icon={<IconAlertTriangle size={16} />} title="Structural Contaminants Detected" color="red" variant="light" mb="xl">
-            The AI vision model has flagged this listing for a purity score below 75%. Inspect carefully upon delivery.
+            The AI vision model has flagged this feedstock stream for a Verified Composition Purity Index (CPI) below 75%. Inspect carefully upon delivery.
           </Alert>
         )}
 
@@ -136,7 +136,7 @@ export default function ListingDetailsPage() {
 
                 <Box>
                   <Group justify="space-between" mb={8}>
-                    <Text size="sm" color="slate.4">AI Purity Ratio</Text>
+                    <Text size="sm" color="slate.4">Verified Composition Purity Index (CPI)</Text>
                     <Text size="md" fw={700} color={isWarning ? "red.4" : "teal.4"}>{listing.purity}%</Text>
                   </Group>
                   <Progress value={listing.purity} color={isWarning ? "red" : "teal"} size="md" />
@@ -144,7 +144,7 @@ export default function ListingDetailsPage() {
 
                 <Box>
                   <Group justify="space-between" mb={8}>
-                    <Text size="sm" color="slate.4">Moisture Saturation</Text>
+                    <Text size="sm" color="slate.4">Relative Moisture Coefficient (RMC)</Text>
                     <Text size="md" fw={700} color="blue.4">{listing.moisture}%</Text>
                   </Group>
                   <Progress value={listing.moisture} color="blue" size="md" />
@@ -156,7 +156,7 @@ export default function ListingDetailsPage() {
           <Grid.Col span={{ base: 12, md: 5 }}>
             <Stack gap="lg" h="100%">
               <Card p="xl" radius="lg" style={{ backgroundColor: "#1e293b", border: "1px solid #334155" }}>
-                <Title order={3} size="h4" mb="md" style={{ color: "#f8fafc" }}>Generator Profile</Title>
+                <Title order={3} size="h4" mb="md" style={{ color: "#f8fafc" }}>Organic Waste Generator Profile</Title>
                 <Text size="xs" color="slate.5" fw={700} style={{ textTransform: 'uppercase' }} mb={4}>Facility Name</Text>
                 <Text size="sm" fw={600} color="#f8fafc" mb="md">{listing.seller.name}</Text>
 

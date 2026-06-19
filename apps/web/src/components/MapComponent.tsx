@@ -1,18 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Fix Leaflet's marker icon issue in Next.js / dynamic loading context
-// @ts-ignore
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-});
 
 // Green marker for sellers
 const sellerIcon = new L.Icon({
@@ -75,7 +66,7 @@ export default function MapComponent({ pins }: MapComponentProps) {
                   <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase mb-1 ${
                     pin.type === 'seller' ? 'bg-emerald-100 text-emerald-800' : 'bg-sky-100 text-sky-800'
                   }`}>
-                    {pin.type === 'seller' ? 'Seller' : 'Buyer'}
+                    {pin.type === 'seller' ? 'Producer' : 'Offtaker'}
                   </span>
                   {pin.details && (
                     <p className="text-xs text-zinc-700 font-medium leading-tight">

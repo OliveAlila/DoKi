@@ -120,7 +120,7 @@ export default function ContractsPage() {
                         <Table.Td style={{ fontFamily: 'monospace', color: '#5eead4' }}>TRX-{t.id.toString().padStart(5, '0')}</Table.Td>
                         <Table.Td>
                           <Text size="sm" fw={600}>{t.category.name}</Text>
-                          <Text size="xs" color="slate.4">{t.quantity} Kg • {t.purity}% Purity</Text>
+                          <Text size="xs" color="slate.4">{t.quantity} Kg • CPI: {t.purity}%</Text>
                         </Table.Td>
                         <Table.Td fw={500}>{t.seller.name}</Table.Td>
                         <Table.Td>

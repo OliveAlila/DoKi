@@ -18,19 +18,19 @@ module.exports = {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         primary: {
-          DEFAULT: 'hsl(142 72% 29%)', // Forest Green
+          DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
         },
         secondary: {
-          DEFAULT: 'hsl(152 69% 31%)', // Organic Green
+          DEFAULT: 'hsl(var(--secondary))',
           foreground: 'hsl(var(--secondary-foreground))',
         },
         accent: {
-          DEFAULT: 'hsl(142 70% 45%)', // Highlight Green
+          DEFAULT: 'hsl(var(--accent))',
           foreground: 'hsl(var(--accent-foreground))',
         },
         warning: {
-          DEFAULT: 'hsl(38 92% 50%)', // Amber
+          DEFAULT: 'hsl(var(--warning))',
           foreground: '#ffffff',
         },
         destructive: {

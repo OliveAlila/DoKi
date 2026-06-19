@@ -2,7 +2,7 @@
 
 import { getApiUrl } from "@/utils/network";
 import { useQuery } from "@tanstack/react-query";
-import { Box, Card, Container, Group, Stack, Text, Title, Badge, Loader, Grid } from "@mantine/core";
+import { Box, Card, Container, Group, Stack, Text, Title, Badge, Loader, Grid, Skeleton } from "@mantine/core";
 import { IconChartBar, IconLeaf, IconFlameOff, IconCloudOff } from "@tabler/icons-react";
 import React, { useMemo } from "react";
 import dynamic from 'next/dynamic';
@@ -37,7 +37,10 @@ const SparklineChart = dynamic(
         );
       };
     }),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => <Skeleton height={80} w="100%" radius="md" />,
+  }
 );
 
 type Transaction = {
@@ -121,11 +124,11 @@ export default function ESGImpactPage() {
             <Group gap="xs">
               <IconChartBar size={28} color="#0d9488" />
               <Title order={1} style={{ fontSize: "28px", fontWeight: 800, color: "#f8fafc" }}>
-                Corporate ESG <Text span inherit color="#0d9488">Carbon Scorecard</Text>
+                Corporate ESG <Text span inherit color="#0d9488">GHG Abatement Ledger</Text>
               </Title>
             </Group>
             <Text size="sm" color="slate.4">
-              Sustainability audit metrics verified via IPCC-Tier 1 mathematical models
+              Audited greenhouse gas abatement ledger verified via IPCC-Tier 1 mathematical models
             </Text>
           </Stack>
         </Group>
@@ -137,7 +140,7 @@ export default function ESGImpactPage() {
               <Group gap="xs" mb="sm">
                 <IconLeaf size={18} color="#0d9488" />
                 <Text size="xs" color="slate.3" fw={700} style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>
-                  Total Wet Weight Diverted
+                  Total Wet Feedstock Diverted
                 </Text>
               </Group>
               <Group justify="space-between" align="baseline" mt="sm">
@@ -158,7 +161,7 @@ export default function ESGImpactPage() {
               <Group gap="xs" mb="sm">
                 <IconFlameOff size={18} color="#f59e0b" />
                 <Text size="xs" color="slate.3" fw={700} style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>
-                  Methane Displaced (CH4)
+                  Audited Greenhouse Gas Abatement Ledger (IPCC Tier 1)
                 </Text>
               </Group>
               <Group justify="space-between" align="baseline" mt="sm">
@@ -179,7 +182,7 @@ export default function ESGImpactPage() {
               <Group gap="xs" mb="sm">
                 <IconCloudOff size={18} color="#6366f1" />
                 <Text size="xs" color="slate.3" fw={700} style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>
-                  Net GHG Reductions
+                  Net Carbon Abatement Equivalent (CO2e)
                 </Text>
               </Group>
               <Group justify="space-between" align="baseline" mt="sm">
