@@ -1,51 +1,54 @@
+/* biome-ignore lint/suspicious/noUnknownAtRules: Tailwind specific at-rules */
 @tailwind base;
+/* biome-ignore lint/suspicious/noUnknownAtRules: Tailwind specific at-rules */
 @tailwind components;
+/* biome-ignore lint/suspicious/noUnknownAtRules: Tailwind specific at-rules */
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --background: 224 39% 7%; /* Deep Forest Slate backdrop */
-    --foreground: 210 40% 98%;
-    --card: 222 47% 11%; /* Industrial Card Surface */
-    --card-foreground: 210 40% 98%;
-    --popover: 224 39% 7%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 142 70.6% 45.3%; /* Compliance Emerald Accent */
-    --primary-foreground: 355.7 100% 99%;
-    --secondary: 152 69% 31%; /* Organic Green */
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 142 70.6% 45.3%; /* Compliance Emerald Accent */
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 22%;
-    --input: 217.2 32.6% 22%;
-    --ring: 142 70.6% 45.3%;
-    --radius: 0.5rem;
-    --warning: 38 93.7% 50.2%; /* Audit Amber Warning Indicators */
-  }
+	:root {
+		--background: 224 39% 7%; /* Deep Forest Slate backdrop */
+		--foreground: 210 40% 98%;
+		--card: 222 47% 11%; /* Industrial Card Surface */
+		--card-foreground: 210 40% 98%;
+		--popover: 224 39% 7%;
+		--popover-foreground: 210 40% 98%;
+		--primary: 142 70.6% 45.3%; /* Compliance Emerald Accent */
+		--primary-foreground: 355.7 100% 99%;
+		--secondary: 152 69% 31%; /* Organic Green */
+		--secondary-foreground: 210 40% 98%;
+		--muted: 217.2 32.6% 17.5%;
+		--muted-foreground: 215 20.2% 65.1%;
+		--accent: 142 70.6% 45.3%; /* Compliance Emerald Accent */
+		--accent-foreground: 210 40% 98%;
+		--destructive: 0 84.2% 60.2%;
+		--destructive-foreground: 210 40% 98%;
+		--border: 217.2 32.6% 22%;
+		--input: 217.2 32.6% 22%;
+		--ring: 142 70.6% 45.3%;
+		--radius: 0.5rem;
+		--warning: 38 93.7% 50.2%; /* Audit Amber Warning Indicators */
+	}
 
-  .dark {
-    --background: 224 39% 7%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-    --popover: 224 39% 7%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 142 70.6% 45.3%;
-    --primary-foreground: 355.7 100% 99%;
-    --secondary: 152 69% 31%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 142 70.6% 45.3%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 22%;
-    --input: 217.2 32.6% 22%;
-    --ring: 142 70.6% 45.3%;
-  }
+	.dark {
+		--background: 224 39% 7%;
+		--foreground: 210 40% 98%;
+		--card: 222 47% 11%;
+		--card-foreground: 210 40% 98%;
+		--popover: 224 39% 7%;
+		--popover-foreground: 210 40% 98%;
+		--primary: 142 70.6% 45.3%;
+		--primary-foreground: 355.7 100% 99%;
+		--secondary: 152 69% 31%;
+		--secondary-foreground: 210 40% 98%;
+		--muted: 217.2 32.6% 17.5%;
+		--muted-foreground: 215 20.2% 65.1%;
+		--accent: 142 70.6% 45.3%;
+		--accent-foreground: 210 40% 98%;
+		--destructive: 0 84.2% 60.2%;
+		--destructive-foreground: 210 40% 98%;
+		--border: 217.2 32.6% 22%;
+		--input: 217.2 32.6% 22%;
+		--ring: 142 70.6% 45.3%;
+	}
 }

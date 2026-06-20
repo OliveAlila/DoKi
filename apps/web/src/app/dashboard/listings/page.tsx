@@ -1,134 +1,285 @@
 "use client";
 
-import { getApiUrl } from "@/utils/network";
+import {
+	ActionIcon,
+	Badge,
+	Box,
+	Button,
+	Card,
+	Container,
+	Group,
+	Loader,
+	Progress,
+	Stack,
+	Table,
+	TableTbody,
+	TableTd,
+	TableTh,
+	TableThead,
+	TableTr,
+	Text,
+	Title,
+} from "@mantine/core";
+import {
+	IconAlertTriangle,
+	IconSettings,
+	IconShieldCheck,
+	IconTrash,
+} from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import { Box, Card, Container, Group, Stack, Table, Text, Title, Badge, Loader, Button, ActionIcon, Progress } from "@mantine/core";
-import { IconShieldCheck, IconAlertTriangle, IconSettings, IconTrash } from "@tabler/icons-react";
-import React from "react";
+import {
+	createColumnHelper,
+	flexRender,
+	getCoreRowModel,
+	useReactTable,
+} from "@tanstack/react-table";
+import { getApiUrl } from "@/utils/network";
 
 type ListingWithCategory = {
-  id: number;
-  quantity: number;
-  moisture: number;
-  purity: number;
-  status: string;
-  category: { name: string };
-  seller: { name: string; address: string };
+	id: number;
+	quantity: number;
+	moisture: number;
+	purity: number;
+	status: string;
+	category: { name: string };
+	seller: { name: string; address: string };
 };
 
 type SellerWithListings = {
-  id: number;
-  name: string;
-  address: string;
-  listings: Omit<ListingWithCategory, 'seller'>[];
+	id: number;
+	name: string;
+	address: string;
+	listings: Omit<ListingWithCategory, "seller">[];
 };
 
+const columnHelper = createColumnHelper<ListingWithCategory>();
+
+const columns = [
+	columnHelper.accessor("id", {
+		header: "Listing ID",
+		cell: (info) => (
+			<Text
+				style={{
+					fontFamily: "monospace",
+					color: "var(--mantine-color-emerald-6)",
+				}}
+			>
+				LST-{info.getValue().toString().padStart(5, "0")}
+			</Text>
+		),
+	}),
+	columnHelper.accessor((row) => row.seller, {
+		id: "seller",
+		header: "Producer (Organic Waste Generator)",
+		cell: (info) => (
+			<Box>
+				<Text size="sm" fw={600}>
+					{info.getValue().name}
+				</Text>
+				<Text size="xs" c="dimmed">
+					{info.getValue().address}
+				</Text>
+			</Box>
+		),
+	}),
+	columnHelper.accessor((row) => row.category.name, {
+		id: "category",
+		header: "Category",
+		cell: (info) => (
+			<Badge color="blue" variant="light">
+				{info.getValue()}
+			</Badge>
+		),
+	}),
+	columnHelper.display({
+		id: "metrics",
+		header: "Metrics",
+		cell: (info) => {
+			const { purity, moisture } = info.row.original;
+			return (
+				<Box>
+					<Group gap="xs" mb={4}>
+						<Text size="xs" w={50}>
+							CPI:
+						</Text>
+						<Progress
+							value={purity}
+							color={purity < 75 ? "red" : "emerald"}
+							size="sm"
+							w={60}
+						/>
+						<Text size="xs" fw={700} c={purity < 75 ? "red.4" : "emerald.6"}>
+							{purity}%
+						</Text>
+					</Group>
+					<Group gap="xs">
+						<Text size="xs" w={50}>
+							RMC:
+						</Text>
+						<Progress value={moisture} color="blue" size="sm" w={60} />
+						<Text size="xs" fw={700} c="blue.4">
+							{moisture}%
+						</Text>
+					</Group>
+				</Box>
+			);
+		},
+	}),
+	columnHelper.display({
+		id: "status",
+		header: "AI Flag",
+		cell: (info) => {
+			const { purity, status } = info.row.original;
+			const needsReview = purity < 75 || status === "PENDING_REVIEW";
+			return needsReview ? (
+				<Badge
+					color="red"
+					variant="filled"
+					leftSection={<IconAlertTriangle size={12} />}
+				>
+					Flagged
+				</Badge>
+			) : (
+				<Badge color="emerald" variant="light">
+					Verified
+				</Badge>
+			);
+		},
+	}),
+	columnHelper.display({
+		id: "actions",
+		header: () => <Text ta="right">Operator Action</Text>,
+		cell: () => (
+			<Group gap="xs" justify="flex-end">
+				<Button
+					size="xs"
+					variant="light"
+					color="yellow"
+					leftSection={<IconSettings size={14} />}
+				>
+					Adjust
+				</Button>
+				<ActionIcon variant="light" color="red" aria-label="Delete">
+					<IconTrash size={16} />
+				</ActionIcon>
+			</Group>
+		),
+	}),
+];
+
 export default function MarketplaceModerationPage() {
-  const { data, isLoading } = useQuery({
-    queryKey: ['listingsModeration'],
-    queryFn: async () => {
-      const res = await fetch(`${getApiUrl()}/api/v1/listings`, { credentials: 'include' });
-      return res.json();
-    },
-  });
+	const { data, isLoading } = useQuery({
+		queryKey: ["listingsModeration"],
+		queryFn: async () => {
+			const res = await fetch(`${getApiUrl()}/api/v1/listings`, {
+				credentials: "include",
+			});
+			return res.json();
+		},
+	});
 
-  const sellers: SellerWithListings[] = data?.sellers || [];
-  const allListings: ListingWithCategory[] = sellers.flatMap(seller => 
-    seller.listings.map(l => ({ ...l, seller: { name: seller.name, address: seller.address } }))
-  );
+	const sellers: SellerWithListings[] = data?.sellers || [];
+	const allListings: ListingWithCategory[] = sellers.flatMap((seller) =>
+		seller.listings.map((l) => ({
+			...l,
+			seller: { name: seller.name, address: seller.address },
+		})),
+	);
 
-  if (isLoading) {
-    return (
-      <Container fluid style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0b0f19' }}>
-        <Stack align="center" gap="md">
-          <Loader color="green" size="lg" type="dots" />
-          <Text color="gray.5" size="sm">Loading Moderation Desk...</Text>
-        </Stack>
-      </Container>
-    );
-  }
+	const table = useReactTable({
+		data: allListings,
+		columns,
+		getCoreRowModel: getCoreRowModel(),
+	});
 
-  return (
-    <Box style={{ backgroundColor: "#0b0f19", color: "#f3f4f6", minHeight: "100vh" }} py={30}>
-      <Container size="xl">
-        <Group justify="space-between" mb={30}>
-          <Stack gap={4}>
-            <Group gap="xs">
-              <IconShieldCheck size={28} color="#22c55e" />
-              <Title order={1} style={{ fontSize: "28px", fontWeight: 800, color: "#f3f4f6" }}>
-                Marketplace <Text span inherit color="#22c55e">Moderation</Text>
-              </Title>
-            </Group>
-            <Text size="sm" color="gray.5">
-              Gemini 2.5 Flash Classification Verification Workstation
-            </Text>
-          </Stack>
-        </Group>
+	if (isLoading) {
+		return (
+			<Container
+				fluid
+				style={{
+					height: "100vh",
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center",
+				}}
+			>
+				<Stack align="center" gap="md">
+					<Loader color="emerald" size="lg" type="dots" />
+					<Text c="dimmed" size="sm">
+						Loading Moderation Desk...
+					</Text>
+				</Stack>
+			</Container>
+		);
+	}
 
-        <Card p="md" radius="lg" style={{ backgroundColor: "#111827", border: "1px solid #1f2937" }}>
-          <Table highlightOnHover verticalSpacing="sm" style={{ color: "#e5e7eb" }}>
-            <Table.Thead style={{ borderBottom: "1.5px solid #1f2937" }}>
-              <Table.Tr>
-                <Table.Th style={{ color: "#9ca3af" }}>Listing ID</Table.Th>
-                <Table.Th style={{ color: "#9ca3af" }}>Producer (Organic Waste Generator)</Table.Th>
-                <Table.Th style={{ color: "#9ca3af" }}>Category</Table.Th>
-                <Table.Th style={{ color: "#9ca3af" }}>Metrics</Table.Th>
-                <Table.Th style={{ color: "#9ca3af" }}>AI Flag</Table.Th>
-                <Table.Th style={{ color: "#9ca3af", textAlign: "right" }}>Operator Action</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {allListings.map((l) => {
-                const needsReview = l.purity < 75 || l.status === "PENDING_REVIEW";
+	return (
+		<Box py={30}>
+			<Container size="xl">
+				<Group justify="space-between" mb={30}>
+					<Stack gap={4}>
+						<Group gap="xs">
+							<IconShieldCheck
+								size={28}
+								style={{ color: "var(--mantine-color-emerald-6)" }}
+							/>
+							<Title order={1} style={{ fontSize: "28px", fontWeight: 800 }}>
+								Marketplace{" "}
+								<Text
+									span
+									inherit
+									style={{ color: "var(--mantine-color-emerald-6)" }}
+								>
+									Moderation
+								</Text>
+							</Title>
+						</Group>
+						<Text size="sm" c="dimmed">
+							Gemini 2.5 Flash Classification Verification Workstation
+						</Text>
+					</Stack>
+				</Group>
 
-                return (
-                  <Table.Tr key={l.id} style={{ borderBottom: "1px solid #1f2937" }}>
-                    <Table.Td style={{ fontFamily: 'monospace', color: '#a7f3d0' }}>LST-{l.id.toString().padStart(5, '0')}</Table.Td>
-                    <Table.Td>
-                      <Text size="sm" fw={600}>{l.seller.name}</Text>
-                      <Text size="xs" color="gray.5">{l.seller.address}</Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Badge color="blue" variant="light">{l.category.name}</Badge>
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap="xs" mb={4}>
-                        <Text size="xs" w={50}>CPI:</Text>
-                        <Progress value={l.purity} color={l.purity < 75 ? "red" : "green"} size="sm" w={60} />
-                        <Text size="xs" fw={700} color={l.purity < 75 ? "red.4" : "green.4"}>{l.purity}%</Text>
-                      </Group>
-                      <Group gap="xs">
-                        <Text size="xs" w={50}>RMC:</Text>
-                        <Progress value={l.moisture} color="blue" size="sm" w={60} />
-                        <Text size="xs" fw={700} color="blue.4">{l.moisture}%</Text>
-                      </Group>
-                    </Table.Td>
-                    <Table.Td>
-                      {needsReview ? (
-                        <Badge color="red" variant="filled" leftSection={<IconAlertTriangle size={12} />}>
-                          Flagged
-                        </Badge>
-                      ) : (
-                        <Badge color="green" variant="light">Verified</Badge>
-                      )}
-                    </Table.Td>
-                    <Table.Td align="right">
-                      <Group gap="xs" justify="flex-end">
-                        <Button size="xs" variant="light" color="yellow" leftSection={<IconSettings size={14} />}>
-                          Adjust
-                        </Button>
-                        <ActionIcon variant="light" color="red" aria-label="Delete">
-                          <IconTrash size={16} />
-                        </ActionIcon>
-                      </Group>
-                    </Table.Td>
-                  </Table.Tr>
-                );
-              })}
-            </Table.Tbody>
-          </Table>
-        </Card>
-      </Container>
-    </Box>
-  );
+				<Card p="md">
+					<Table
+						highlightOnHover
+						verticalSpacing="sm"
+						withTableBorder
+						withColumnBorders
+					>
+						<TableThead>
+							{table.getHeaderGroups().map((headerGroup) => (
+								<TableTr key={headerGroup.id}>
+									{headerGroup.headers.map((header) => (
+										<TableTh key={header.id} colSpan={header.colSpan}>
+											{header.isPlaceholder
+												? null
+												: flexRender(
+														header.column.columnDef.header,
+														header.getContext(),
+													)}
+										</TableTh>
+									))}
+								</TableTr>
+							))}
+						</TableThead>
+						<TableTbody>
+							{table.getRowModel().rows.map((row) => (
+								<TableTr key={row.id}>
+									{row.getVisibleCells().map((cell) => (
+										<TableTd key={cell.id}>
+											{flexRender(
+												cell.column.columnDef.cell,
+												cell.getContext(),
+											)}
+										</TableTd>
+									))}
+								</TableTr>
+							))}
+						</TableTbody>
+					</Table>
+				</Card>
+			</Container>
+		</Box>
+	);
 }
