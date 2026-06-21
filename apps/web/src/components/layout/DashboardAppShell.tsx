@@ -74,7 +74,7 @@ const DashboardAppShell: React.FC<{ children: ReactNode }> = ({ children }) => {
 						>
 							<IconLeaf
 								size={28}
-								style={{ color: "var(--mantine-color-emerald-6)" }}
+								style={{ color: "var(--mantine-primary-color-filled)" }}
 							/>
 							<Title
 								order={3}
@@ -88,7 +88,7 @@ const DashboardAppShell: React.FC<{ children: ReactNode }> = ({ children }) => {
 								<Text
 									span
 									inherit
-									style={{ color: "var(--mantine-color-emerald-6)" }}
+									style={{ color: "var(--mantine-primary-color-filled)" }}
 								>
 									Console
 								</Text>

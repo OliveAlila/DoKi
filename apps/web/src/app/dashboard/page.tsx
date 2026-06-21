@@ -33,6 +33,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { formatActionString } from "@/utils/format";
 import { getApiUrl } from "@/utils/network";
 
 // Dynamically load the Map component to prevent window-undefined SSR errors in Next.js
@@ -428,7 +429,7 @@ export default function OperatorDashboard() {
 				<Grid gap="md" mb={30}>
 					{/* Card A: Total Waste Diverted */}
 					<Grid.Col span={{ base: 12, md: 4 }}>
-						<Card p="lg">
+						<Card p="lg" h="100%">
 							<Text
 								size="xs"
 								c="dimmed"
@@ -454,14 +455,14 @@ export default function OperatorDashboard() {
 
 					{/* Card B: Methane Avoided */}
 					<Grid.Col span={{ base: 12, md: 4 }}>
-						<Card p="lg">
+						<Card p="lg" h="100%">
 							<Text
 								size="xs"
 								c="dimmed"
 								fw={700}
 								style={{ textTransform: "uppercase", letterSpacing: "1px" }}
 							>
-								Audited Greenhouse Gas Abatement Ledger (IPCC Tier 1)
+								Methane Avoided (IPCC Tier 1)
 							</Text>
 							<Group justify="space-between" align="baseline" mt="sm">
 								<Text style={{ fontSize: "32px", fontWeight: 800 }}>
@@ -480,7 +481,7 @@ export default function OperatorDashboard() {
 
 					{/* Card C: CO2e Reductions */}
 					<Grid.Col span={{ base: 12, md: 4 }}>
-						<Card p="lg">
+						<Card p="lg" h="100%">
 							<Text
 								size="xs"
 								c="dimmed"
@@ -601,7 +602,7 @@ export default function OperatorDashboard() {
 																variant="light"
 																size="xs"
 															>
-																{log.action}
+																{formatActionString(log.action)}
 															</Badge>
 														</Table.Td>
 														<Table.Td

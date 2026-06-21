@@ -95,13 +95,10 @@ export const DashboardNavbar = ({
 										padding: isExpanded ? "0 12px" : "0",
 										transition: "padding 0.15s ease",
 										backgroundColor: isActive
-											? "var(--doki-bg-base)"
+											? "var(--mantine-primary-color-filled)"
 											: "transparent",
-										borderLeft: isActive
-											? "3px solid var(--mantine-color-emerald-6)"
-											: "3px solid transparent",
 										color: isActive
-											? "var(--mantine-color-emerald-6)"
+											? "#FFFFFF"
 											: "var(--doki-text-secondary)",
 									},
 									section: {
@@ -110,7 +107,7 @@ export const DashboardNavbar = ({
 										alignItems: "center",
 										justifyContent: "center",
 										color: isActive
-											? "var(--mantine-color-emerald-6)"
+											? "#FFFFFF"
 											: "var(--doki-text-secondary)",
 									},
 									body: {
