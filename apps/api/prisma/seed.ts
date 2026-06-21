@@ -229,15 +229,13 @@ async function main() {
 	const endDate = new Date(2026, 5, 30).getTime();
 
 	for (let i = 0; i < numTransactions; i++) {
-		const seller =
-			sellersList[Math.floor(Math.random() * sellersList.length)] ||
-			sellersList[0];
-		const buyer =
-			buyersList[Math.floor(Math.random() * buyersList.length)] ||
-			buyersList[0];
-		const category =
-			categoriesList[Math.floor(Math.random() * categoriesList.length)] ||
-			categoriesList[0];
+		const seller = sellersList[Math.floor(Math.random() * sellersList.length)];
+		const buyer = buyersList[Math.floor(Math.random() * buyersList.length)];
+		const category = categoriesList[Math.floor(Math.random() * categoriesList.length)];
+
+		if (!seller || !buyer || !category) {
+			throw new Error("Missing seed data");
+		}
 
 		const quantity = Math.floor(Math.random() * 8000) + 1000; // 1000 to 9000 kg
 		const moisture = parseFloat((Math.random() * 60 + 20).toFixed(1)); // 20.0 to 80.0%
