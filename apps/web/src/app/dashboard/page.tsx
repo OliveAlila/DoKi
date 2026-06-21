@@ -33,7 +33,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { formatActionString } from "@/utils/format";
+import { toPascalCaseWithSpace } from "@/utils/format";
 import { getApiUrl } from "@/utils/network";
 
 // Dynamically load the Map component to prevent window-undefined SSR errors in Next.js
@@ -602,13 +602,13 @@ export default function OperatorDashboard() {
 																variant="light"
 																size="xs"
 															>
-																{formatActionString(log.action)}
+																{toPascalCaseWithSpace(log.action)}
 															</Badge>
 														</Table.Td>
 														<Table.Td
 															style={{ fontSize: "12px", fontWeight: 500 }}
 														>
-															{log.operator}
+															{toPascalCaseWithSpace(log.operator)}
 														</Table.Td>
 													</Table.Tr>
 													<Table.Tr>

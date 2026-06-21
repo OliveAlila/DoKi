@@ -13,7 +13,9 @@ import { useDisclosure } from "@mantine/hooks";
 import { IconLeaf } from "@tabler/icons-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ThemeToggle } from "../ThemeToggle";
 import { DashboardNavbar } from "./DashboardNavbar";
+import { UserMenu } from "./UserMenu";
 
 const DashboardAppShell: React.FC<{ children: ReactNode }> = ({ children }) => {
 	const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
@@ -94,6 +96,10 @@ const DashboardAppShell: React.FC<{ children: ReactNode }> = ({ children }) => {
 								</Text>
 							</Title>
 						</Link>
+					</Group>
+					<Group gap="sm" align="center">
+						<ThemeToggle />
+						<UserMenu />
 					</Group>
 				</Group>
 			</AppShellHeader>

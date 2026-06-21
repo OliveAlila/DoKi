@@ -13,6 +13,7 @@ type User = {
 	latitude?: number;
 	longitude?: number;
 	companyName?: string;
+	contactPhone?: string;
 	address?: string;
 };
 

@@ -136,11 +136,59 @@ router.get("/me", async (req, res) => {
 				email: user.email,
 				name: user.name,
 				role: user.role,
+				companyName: user.companyName,
+				contactPhone: user.contactPhone,
+				address: user.address,
 			},
 		});
 	} catch (error) {
 		console.error("Verify /me error:", error);
 		res.status(401).json({ error: "Invalid token" });
+	}
+});
+
+router.put("/me", async (req, res) => {
+	const authHeader = req.headers.authorization;
+	const token = authHeader ? authHeader.split(" ")[1] : req.cookies?.auth_token;
+
+	if (!token) {
+		return res
+			.status(401)
+			.json({ error: "Unauthorized: Missing token reference" });
+	}
+
+	try {
+		const decoded = jwt.verify(token, JWT_SECRET) as {
+			userId: number;
+			role?: string;
+		};
+		const { name, companyName, contactPhone, address } = req.body;
+		
+		const updatedUser = await prisma.user.update({
+			where: { id: decoded.userId },
+			data: {
+				name,
+				companyName,
+				contactPhone,
+				address,
+			},
+		});
+		
+		res.json({
+			message: "Profile updated successfully",
+			user: {
+				id: updatedUser.id,
+				email: updatedUser.email,
+				name: updatedUser.name,
+				role: updatedUser.role,
+				companyName: updatedUser.companyName,
+				contactPhone: updatedUser.contactPhone,
+				address: updatedUser.address,
+			},
+		});
+	} catch (error) {
+		console.error("Update /me error:", error);
+		res.status(500).json({ error: "Internal server error" });
 	}
 });
 

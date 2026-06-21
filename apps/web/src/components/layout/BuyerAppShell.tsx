@@ -13,7 +13,9 @@ import { useDisclosure } from "@mantine/hooks";
 import { IconLeaf } from "@tabler/icons-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { ThemeToggle } from "../ThemeToggle";
 import { BuyerNavbar } from "./BuyerNavbar";
+import { UserMenu } from "./UserMenu";
 
 const BuyerAppShell: React.FC<{ children: ReactNode }> = ({ children }) => {
 	const [mobileOpened, { toggle: toggleMobile }] = useDisclosure();
@@ -94,6 +96,10 @@ const BuyerAppShell: React.FC<{ children: ReactNode }> = ({ children }) => {
 								</Text>
 							</Title>
 						</Link>
+					</Group>
+					<Group gap="sm" align="center">
+						<ThemeToggle />
+						<UserMenu />
 					</Group>
 				</Group>
 			</AppShellHeader>

@@ -1,6 +1,7 @@
 "use client";
 "use no memo";
 
+import React from "react";
 import {
 	ActionIcon,
 	Badge,
@@ -19,21 +20,19 @@ import {
 	TableTr,
 	Tabs,
 	Text,
+	TextInput,
 	Title,
+	Divider,
+	SimpleGrid,
 } from "@mantine/core";
 import {
 	IconBan,
 	IconBuildingFactory,
 	IconUserExclamation,
 	IconUsers,
+	IconSearch,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import {
-	createColumnHelper,
-	flexRender,
-	getCoreRowModel,
-	useReactTable,
-} from "@tanstack/react-table";
 import { parseAsString, useQueryState } from "nuqs";
 import { getApiUrl } from "@/utils/network";
 
@@ -60,122 +59,12 @@ type Buyer = {
 	address: string;
 };
 
-const sellerColumnHelper = createColumnHelper<SellerWithListings>();
-
-const sellerColumns = [
-	sellerColumnHelper.accessor("id", {
-		header: "Enterprise ID",
-		cell: (info) => (
-			<Text
-				style={{
-					fontFamily: "monospace",
-					color: "var(--mantine-color-emerald-6)",
-				}}
-			>
-				E-SEL-{info.getValue().toString().padStart(4, "0")}
-			</Text>
-		),
-	}),
-	sellerColumnHelper.accessor("name", {
-		header: "Name",
-		cell: (info) => <Text fw={600}>{info.getValue()}</Text>,
-	}),
-	sellerColumnHelper.display({
-		id: "location",
-		header: "Location",
-		cell: (info) => {
-			const { address, latitude, longitude } = info.row.original;
-			return (
-				<Box>
-					<Text size="sm">{address}</Text>
-					<Text size="xs" c="dimmed">
-						{latitude.toFixed(4)}, {longitude.toFixed(4)}
-					</Text>
-				</Box>
-			);
-		},
-	}),
-	sellerColumnHelper.accessor((row) => row.listings.length, {
-		id: "listings",
-		header: "Active Listings",
-		cell: (info) => (
-			<Badge color="blue" variant="light">
-				{info.getValue()} items
-			</Badge>
-		),
-	}),
-	sellerColumnHelper.display({
-		id: "actions",
-		header: () => <Text ta="right">Actions</Text>,
-		cell: () => (
-			<Group gap="xs" justify="flex-end">
-				<Button size="xs" variant="light" color="blue">
-					View Profile
-				</Button>
-				<ActionIcon variant="light" color="red" aria-label="Suspend">
-					<IconBan size={16} />
-				</ActionIcon>
-			</Group>
-		),
-	}),
-];
-
-const buyerColumnHelper = createColumnHelper<Buyer>();
-
-const buyerColumns = [
-	buyerColumnHelper.accessor("id", {
-		header: "Industrial ID",
-		cell: (info) => (
-			<Text
-				style={{
-					fontFamily: "monospace",
-					color: "var(--mantine-color-blue-4)",
-				}}
-			>
-				I-BUY-{info.getValue().toString().padStart(4, "0")}
-			</Text>
-		),
-	}),
-	buyerColumnHelper.accessor("name", {
-		header: "Name",
-		cell: (info) => <Text fw={600}>{info.getValue()}</Text>,
-	}),
-	buyerColumnHelper.display({
-		id: "location",
-		header: "Location",
-		cell: (info) => {
-			const { address, latitude, longitude } = info.row.original;
-			return (
-				<Box>
-					<Text size="sm">{address}</Text>
-					<Text size="xs" c="dimmed">
-						{latitude.toFixed(4)}, {longitude.toFixed(4)}
-					</Text>
-				</Box>
-			);
-		},
-	}),
-	buyerColumnHelper.display({
-		id: "actions",
-		header: () => <Text ta="right">Actions</Text>,
-		cell: () => (
-			<Group gap="xs" justify="flex-end">
-				<Button size="xs" variant="light" color="blue">
-					Verify License
-				</Button>
-				<ActionIcon variant="light" color="red" aria-label="Suspend">
-					<IconBan size={16} />
-				</ActionIcon>
-			</Group>
-		),
-	}),
-];
-
 export default function UserRegistryPage() {
 	const [activeTab, setActiveTab] = useQueryState(
 		"tab",
 		parseAsString.withDefault("sellers"),
 	);
+	const [searchQuery, setSearchQuery] = React.useState("");
 
 	const { data, isLoading } = useQuery({
 		queryKey: ["usersRegistry"],
@@ -190,17 +79,13 @@ export default function UserRegistryPage() {
 	const sellers: SellerWithListings[] = data?.sellers || [];
 	const buyers: Buyer[] = data?.buyers || [];
 
-	const sellersTable = useReactTable({
-		data: sellers,
-		columns: sellerColumns,
-		getCoreRowModel: getCoreRowModel(),
-	});
-
-	const buyersTable = useReactTable({
-		data: buyers,
-		columns: buyerColumns,
-		getCoreRowModel: getCoreRowModel(),
-	});
+	const filteredSellers = sellers.filter(s => 
+		!searchQuery || s.name.toLowerCase().includes(searchQuery.toLowerCase())
+	);
+	
+	const filteredBuyers = buyers.filter(b => 
+		!searchQuery || b.name.toLowerCase().includes(searchQuery.toLowerCase())
+	);
 
 	if (isLoading) {
 		return (
@@ -250,7 +135,35 @@ export default function UserRegistryPage() {
 					</Stack>
 				</Group>
 
-				<Card p="0" style={{ overflow: "hidden" }}>
+				<Card withBorder shadow="sm" p="lg" mb="lg">
+					<Stack gap="lg">
+						<Group justify="space-between" align="center">
+							<Stack gap={0}>
+								<Title order={4}>Filters</Title>
+								<Text size="sm" c="dimmed">
+									Refine user search
+								</Text>
+							</Stack>
+							<Button variant="light" color="gray" onClick={() => setSearchQuery("")}>
+								Clear All
+							</Button>
+						</Group>
+
+						<Divider />
+
+						<SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+							<TextInput
+								label="Search User"
+								placeholder="Enter name"
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.currentTarget.value)}
+								leftSection={<IconSearch size={16} />}
+							/>
+						</SimpleGrid>
+					</Stack>
+				</Card>
+
+				<Card p="0" withBorder shadow="sm" radius="md" style={{ overflow: "hidden" }}>
 					<Tabs
 						value={activeTab}
 						onChange={setActiveTab}
@@ -282,32 +195,53 @@ export default function UserRegistryPage() {
 								withColumnBorders
 							>
 								<TableThead>
-									{sellersTable.getHeaderGroups().map((headerGroup) => (
-										<TableTr key={headerGroup.id}>
-											{headerGroup.headers.map((header) => (
-												<TableTh key={header.id} colSpan={header.colSpan}>
-													{header.isPlaceholder
-														? null
-														: flexRender(
-																header.column.columnDef.header,
-																header.getContext(),
-															)}
-												</TableTh>
-											))}
-										</TableTr>
-									))}
+									<TableTr>
+										<TableTh>Enterprise ID</TableTh>
+										<TableTh>Name</TableTh>
+										<TableTh>Location</TableTh>
+										<TableTh>Active Listings</TableTh>
+										<TableTh ta="right">Actions</TableTh>
+									</TableTr>
 								</TableThead>
 								<TableTbody>
-									{sellersTable.getRowModel().rows.map((row) => (
+									{filteredSellers.map((row) => (
 										<TableTr key={row.id}>
-											{row.getVisibleCells().map((cell) => (
-												<TableTd key={cell.id}>
-													{flexRender(
-														cell.column.columnDef.cell,
-														cell.getContext(),
-													)}
-												</TableTd>
-											))}
+											<TableTd>
+												<Text
+													style={{
+														fontFamily: "monospace",
+														color: "var(--mantine-color-emerald-6)",
+													}}
+												>
+													E-SEL-{row.id.toString().padStart(4, "0")}
+												</Text>
+											</TableTd>
+											<TableTd>
+												<Text fw={600}>{row.name}</Text>
+											</TableTd>
+											<TableTd>
+												<Box>
+													<Text size="sm">{row.address}</Text>
+													<Text size="xs" c="dimmed">
+														{row.latitude.toFixed(4)}, {row.longitude.toFixed(4)}
+													</Text>
+												</Box>
+											</TableTd>
+											<TableTd>
+												<Badge color="blue" variant="light">
+													{row.listings.length} Active
+												</Badge>
+											</TableTd>
+											<TableTd>
+												<Group gap="xs" justify="flex-end">
+													<Button size="xs" variant="light" color="blue">
+														Verify License
+													</Button>
+													<ActionIcon variant="light" color="red" aria-label="Suspend">
+														<IconBan size={16} />
+													</ActionIcon>
+												</Group>
+											</TableTd>
 										</TableTr>
 									))}
 								</TableTbody>
@@ -322,32 +256,53 @@ export default function UserRegistryPage() {
 								withColumnBorders
 							>
 								<TableThead>
-									{buyersTable.getHeaderGroups().map((headerGroup) => (
-										<TableTr key={headerGroup.id}>
-											{headerGroup.headers.map((header) => (
-												<TableTh key={header.id} colSpan={header.colSpan}>
-													{header.isPlaceholder
-														? null
-														: flexRender(
-																header.column.columnDef.header,
-																header.getContext(),
-															)}
-												</TableTh>
-											))}
-										</TableTr>
-									))}
+									<TableTr>
+										<TableTh>Organization ID</TableTh>
+										<TableTh>Name</TableTh>
+										<TableTh>Facility Location</TableTh>
+										<TableTh>Status</TableTh>
+										<TableTh ta="right">Actions</TableTh>
+									</TableTr>
 								</TableThead>
 								<TableTbody>
-									{buyersTable.getRowModel().rows.map((row) => (
+									{filteredBuyers.map((row) => (
 										<TableTr key={row.id}>
-											{row.getVisibleCells().map((cell) => (
-												<TableTd key={cell.id}>
-													{flexRender(
-														cell.column.columnDef.cell,
-														cell.getContext(),
-													)}
-												</TableTd>
-											))}
+											<TableTd>
+												<Text
+													style={{
+														fontFamily: "monospace",
+														color: "var(--mantine-color-blue-6)",
+													}}
+												>
+													O-BUY-{row.id.toString().padStart(4, "0")}
+												</Text>
+											</TableTd>
+											<TableTd>
+												<Text fw={600}>{row.name}</Text>
+											</TableTd>
+											<TableTd>
+												<Box>
+													<Text size="sm">{row.address}</Text>
+													<Text size="xs" c="dimmed">
+														{row.latitude.toFixed(4)}, {row.longitude.toFixed(4)}
+													</Text>
+												</Box>
+											</TableTd>
+											<TableTd>
+												<Badge color="emerald" variant="light">
+													Active
+												</Badge>
+											</TableTd>
+											<TableTd>
+												<Group gap="xs" justify="flex-end">
+													<Button size="xs" variant="light" color="blue">
+														Verify License
+													</Button>
+													<ActionIcon variant="light" color="red" aria-label="Suspend">
+														<IconBan size={16} />
+													</ActionIcon>
+												</Group>
+											</TableTd>
 										</TableTr>
 									))}
 								</TableTbody>

@@ -1,14 +1,23 @@
 "use client";
 "use no memo";
 
+import React from "react";
 import {
+	ActionIcon,
 	Badge,
 	Box,
 	Card,
 	Container,
 	Grid,
 	Group,
+	Menu,
+	MenuDropdown,
+	MenuItem,
+	MenuLabel,
+	MenuTarget,
 	Progress,
+	ScrollArea,
+	SimpleGrid,
 	Stack,
 	Table,
 	TableTbody,
@@ -17,15 +26,22 @@ import {
 	TableThead,
 	TableTr,
 	Text,
+	TextInput,
+	ThemeIcon,
 	Title,
+	Button,
+	Divider,
+	Select,
 } from "@mantine/core";
-import { IconLeaf, IconTrendingUp } from "@tabler/icons-react";
 import {
-	createColumnHelper,
-	flexRender,
-	getCoreRowModel,
-	useReactTable,
-} from "@tanstack/react-table";
+	IconDotsVertical,
+	IconEye,
+	IconLeaf,
+	IconMapPin,
+	IconSearch,
+	IconTrendingUp,
+} from "@tabler/icons-react";
+import Link from "next/link";
 
 // Mock Data for Forecasting
 const FORECAST_DATA = [
@@ -35,6 +51,8 @@ const FORECAST_DATA = [
 		currentVolume: "1,200 Tonnes",
 		projectedAbatement: "245 MTCO2e",
 		trend: "+12%",
+		activeSites: 14,
+		compliance: "High",
 	},
 	{
 		id: 2,
@@ -42,6 +60,8 @@ const FORECAST_DATA = [
 		currentVolume: "850 Tonnes",
 		projectedAbatement: "180 MTCO2e",
 		trend: "+8%",
+		activeSites: 9,
+		compliance: "Medium",
 	},
 	{
 		id: 3,
@@ -49,38 +69,47 @@ const FORECAST_DATA = [
 		currentVolume: "2,100 Tonnes",
 		projectedAbatement: "410 MTCO2e",
 		trend: "+15%",
+		activeSites: 22,
+		compliance: "High",
 	},
 ];
 
-type Forecast = (typeof FORECAST_DATA)[0];
-const columnHelper = createColumnHelper<Forecast>();
+// Row-level three-dot menu (baykart pattern)
+function ForecastTableMenu({ region }: { region: string }) {
+	const slug = region.toLowerCase();
+	return (
+		<Menu shadow="md" width={200} position="bottom-end">
+			<MenuTarget>
+				<ActionIcon variant="subtle" color="gray" size="sm">
+					<IconDotsVertical size={16} />
+				</ActionIcon>
+			</MenuTarget>
+			<MenuDropdown>
+				<MenuLabel>Actions</MenuLabel>
+				<MenuItem
+					component={Link}
+					href={`/dashboard/carbon/${slug}`}
+					leftSection={<IconEye size={14} />}
+				>
+					View Details
+				</MenuItem>
+				<MenuItem
+					component={Link}
+					href={`/dashboard/carbon/${slug}`}
+					leftSection={<IconMapPin size={14} />}
+				>
+					View Sites
+				</MenuItem>
+			</MenuDropdown>
+		</Menu>
+	);
+}
 
-const columns = [
-	columnHelper.accessor("region", {
-		header: "Region",
-		cell: (info) => <Text fw={600}>{info.getValue()}</Text>,
-	}),
-	columnHelper.accessor("currentVolume", {
-		header: "Current Volume",
-		cell: (info) => info.getValue(),
-	}),
-	columnHelper.accessor("projectedAbatement", {
-		header: "Projected Abatement",
-		cell: (info) => (
-			<Text fw={600} c="emerald.6">
-				{info.getValue()}
-			</Text>
-		),
-	}),
-	columnHelper.accessor("trend", {
-		header: "Trend",
-		cell: (info) => (
-			<Badge color="emerald" variant="light">
-				{info.getValue()}
-			</Badge>
-		),
-	}),
-];
+const complianceColor = (c: string) => {
+	if (c === "High") return "emerald";
+	if (c === "Medium") return "yellow";
+	return "red";
+};
 
 // Mock Data for DOC Monitors
 const DOC_MONITORS = [
@@ -105,12 +134,18 @@ const DOC_MONITORS = [
 ];
 
 export default function CarbonTracingPage() {
-	const table = useReactTable({
-		data: FORECAST_DATA,
-		columns,
-		getCoreRowModel: getCoreRowModel(),
-	});
+	const [searchQuery, setSearchQuery] = React.useState("");
+	const [complianceFilter, setComplianceFilter] = React.useState<string | null>(null);
 
+	const filteredData = FORECAST_DATA.filter((row) => {
+		if (searchQuery && !row.region.toLowerCase().includes(searchQuery.toLowerCase())) {
+			return false;
+		}
+		if (complianceFilter && row.compliance !== complianceFilter) {
+			return false;
+		}
+		return true;
+	});
 	return (
 		<Box py={30}>
 			<Container size="xl">
@@ -181,56 +216,141 @@ export default function CarbonTracingPage() {
 					</Grid.Col>
 				</Grid>
 
-				<Card p="md">
-					<Group justify="space-between" mb="md">
-						<Title order={3} size="lg" style={{ fontWeight: 700 }}>
-							Regional Abatement Forecasting
-						</Title>
-						<Badge
-							color="blue"
-							variant="light"
-							leftSection={<IconTrendingUp size={14} />}
+				<Card withBorder shadow="sm" p="lg" mb="lg">
+					<Stack gap="lg">
+						<Group justify="space-between" align="center">
+							<Stack gap={0}>
+								<Title order={4}>Filters</Title>
+								<Text size="sm" c="dimmed">
+									Refine regional data
+								</Text>
+							</Stack>
+							<Button variant="light" color="gray" onClick={() => {
+								setSearchQuery("");
+								setComplianceFilter(null);
+							}}>
+								Clear All
+							</Button>
+						</Group>
+
+						<Divider />
+
+						<SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+							<TextInput
+								label="Search Region"
+								placeholder="Enter region name"
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.currentTarget.value)}
+								leftSection={<IconSearch size={16} />}
+							/>
+							<Select
+								label="Compliance"
+								placeholder="Select compliance level"
+								data={[
+									{ value: "High", label: "High" },
+									{ value: "Medium", label: "Medium" },
+									{ value: "Low", label: "Low" }
+								]}
+								value={complianceFilter}
+								onChange={setComplianceFilter}
+								clearable
+							/>
+						</SimpleGrid>
+					</Stack>
+				</Card>
+
+				<Card p="0" withBorder shadow="sm" radius="md">
+					<Box p="md" style={{ borderBottom: "1px solid var(--doki-border-color)" }}>
+						<Group justify="space-between">
+							<Title order={3} size="lg" style={{ fontWeight: 700 }}>
+								Regional Abatement Forecasting
+							</Title>
+							<Badge
+								color="blue"
+								variant="light"
+								leftSection={<IconTrendingUp size={14} />}
+							>
+								Next 30 Days
+							</Badge>
+						</Group>
+					</Box>
+
+					<ScrollArea offsetScrollbars type="scroll">
+						<Table
+							highlightOnHover
+							stickyHeader
+							verticalSpacing="sm"
+							withTableBorder
+							withColumnBorders
 						>
-							Next 30 Days
-						</Badge>
-					</Group>
-					<Table
-						highlightOnHover
-						verticalSpacing="sm"
-						withTableBorder
-						withColumnBorders
-					>
-						<TableThead>
-							{table.getHeaderGroups().map((headerGroup) => (
-								<TableTr key={headerGroup.id}>
-									{headerGroup.headers.map((header) => (
-										<TableTh key={header.id} colSpan={header.colSpan}>
-											{header.isPlaceholder
-												? null
-												: flexRender(
-														header.column.columnDef.header,
-														header.getContext(),
-													)}
-										</TableTh>
-									))}
+							<TableThead>
+								<TableTr>
+									<TableTh>Region</TableTh>
+									<TableTh>Current Volume</TableTh>
+									<TableTh>Projected Abatement</TableTh>
+									<TableTh>Trend</TableTh>
+									<TableTh>Active Sites</TableTh>
+									<TableTh>Compliance</TableTh>
+									<TableTh>Actions</TableTh>
 								</TableTr>
-							))}
-						</TableThead>
-						<TableTbody>
-							{table.getRowModel().rows.map((row) => (
-								<TableTr key={row.id}>
-									{row.getVisibleCells().map((cell) => (
-										<TableTd key={cell.id}>
-											{flexRender(
-												cell.column.columnDef.cell,
-												cell.getContext(),
-											)}
+							</TableThead>
+							<TableTbody>
+								{filteredData.length > 0 ? (
+									filteredData.map((row) => (
+										<TableTr key={row.id}>
+											<TableTd>
+												<Text fw={600}>{row.region}</Text>
+											</TableTd>
+											<TableTd>{row.currentVolume}</TableTd>
+											<TableTd>
+												<Text fw={600} c="emerald.6">
+													{row.projectedAbatement}
+												</Text>
+											</TableTd>
+											<TableTd>
+												<Badge color="emerald" variant="light">
+													{row.trend}
+												</Badge>
+											</TableTd>
+											<TableTd>{row.activeSites}</TableTd>
+											<TableTd>
+												<Badge
+													color={complianceColor(row.compliance)}
+													variant="light"
+												>
+													{row.compliance}
+												</Badge>
+											</TableTd>
+											<TableTd>
+												<ForecastTableMenu region={row.region} />
+											</TableTd>
+										</TableTr>
+									))
+								) : (
+									<TableTr>
+										<TableTd colSpan={7}>
+											<Stack align="center" justify="center" py="xl" gap="md">
+												<ThemeIcon
+													size={60}
+													radius="md"
+													variant="light"
+													color="emerald"
+												>
+													<IconLeaf size={32} stroke={1.5} />
+												</ThemeIcon>
+												<Text size="lg" fw={500}>
+													No forecast data found
+												</Text>
+												<Text size="sm" c="dimmed">
+													No regional data is available at this time.
+												</Text>
+											</Stack>
 										</TableTd>
-									))}
-								</TableTr>
-							))}
-						</TableTbody>
-					</Table>
+									</TableTr>
+								)}
+							</TableTbody>
+						</Table>
+					</ScrollArea>
 				</Card>
 			</Container>
 		</Box>
