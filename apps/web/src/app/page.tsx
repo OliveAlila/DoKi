@@ -1,37 +1,32 @@
 "use client";
 
-import { Button, Container, Text, Title } from "@mantine/core";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
+import { Container } from "@mantine/core";
 
-export default function DashboardPage() {
-	const { user, loading, signOut } = useAuth();
-	const router = useRouter();
+import {
+	Navbar,
+	HeroSection,
+	StatsSection,
+	FeaturesSection,
+	CTASection,
+	Footer,
+} from "@/components/layout/HomePageShell";
 
-	useEffect(() => {
-		if (!loading && !user) {
-			router.push("/sign-in");
-		} else if (user) {
-			router.push("/dashboard");
-		}
-	}, [user, loading, router]);
-
-	if (loading || !user) {
-		return (
-			<Container my={40}>
-				<Text>Loading...</Text>
-			</Container>
-		);
-	}
-
+export default function HomePage() {
 	return (
-		<Container my={40}>
-			<Title>Dashboard</Title>
-			<Text mt="md">Welcome, {user.name || user.email}!</Text>
-			<Button mt="md" onClick={() => signOut()}>
-				Sign out
-			</Button>
+		<Container size="xl">
+			<Navbar />
+
+			<HeroSection />
+
+			<StatsSection />
+
+			<FeaturesSection />
+
+		
+
+			<CTASection />
+
+			<Footer />
 		</Container>
 	);
 }
